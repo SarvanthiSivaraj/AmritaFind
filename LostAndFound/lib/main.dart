@@ -40,41 +40,36 @@ class _MainNavigationState extends State<MainNavigation> {
     const maroon = Color(0xFF8C2F39);
 
     return Scaffold(
-      // APP BAR with perfectly centered title + subtitle
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(110),
+        preferredSize: const Size.fromHeight(70),
         child: AppBar(
           backgroundColor: maroon,
           elevation: 6,
           automaticallyImplyLeading: false,
-          // Use flexibleSpace so we can perfectly center vertically & horizontally
           flexibleSpace: SafeArea(
             child: Center(
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center, // vertical center
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: const [
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.search, color: Colors.white, size: 22),
+                      Icon(Icons.search, color: Colors.white, size: 20),
                       SizedBox(width: 8),
                       Text(
                         "Lost & Found",
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 20,
+                          fontSize: 18,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
                   ),
-                  SizedBox(height: 6),
+                  SizedBox(height: 2),
                   Text(
                     "Amrita Campus",
-                    style: TextStyle(
-                      color: Color(0xFFF2D6D8),
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: Color(0xFFF2D6D8), fontSize: 11),
                   ),
                 ],
               ),
@@ -83,17 +78,14 @@ class _MainNavigationState extends State<MainNavigation> {
         ),
       ),
 
-      // current page content
       body: pages[currentIndex],
 
-      // place FAB in center with docked notch
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: SizedBox(
-        height: 64,
-        width: 64,
+        height: 48,
+        width: 48,
         child: FloatingActionButton(
           onPressed: () {
-            // currently opens AddPostPage -- change to camera/picker if needed
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => AddPostPage()),
@@ -104,21 +96,19 @@ class _MainNavigationState extends State<MainNavigation> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          child: const Icon(Icons.add, size: 30,color: Colors.white,),
+          child: const Icon(Icons.add, size: 30, color: Colors.white),
         ),
       ),
 
-      // BottomAppBar with notch to host the centered FAB
       bottomNavigationBar: BottomAppBar(
         color: Colors.white,
         shape: const CircularNotchedRectangle(),
         notchMargin: 8,
         child: SizedBox(
-          height: 64,
+          height: 50,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              // Left side icons (Home, Chats)
               Expanded(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -141,10 +131,8 @@ class _MainNavigationState extends State<MainNavigation> {
                 ),
               ),
 
-              // Spacer for the FAB notch (keeps even spacing)
               const SizedBox(width: 8),
 
-              // Right side icons (Assistant, Profile)
               Expanded(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
