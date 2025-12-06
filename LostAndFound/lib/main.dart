@@ -39,6 +39,9 @@ class _MainNavigationState extends State<MainNavigation> {
   Widget build(BuildContext context) {
     const maroon = Color(0xFF8C2F39);
 
+    // show FAB only on Home/Feed
+    final bool showFab = currentIndex == 0;
+
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(70),
@@ -80,30 +83,34 @@ class _MainNavigationState extends State<MainNavigation> {
 
       body: pages[currentIndex],
 
+      // Only provide FAB when showFab is true
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: SizedBox(
-        height: 48,
-        width: 48,
-        child: FloatingActionButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => AddPostPage()),
-            );
-          },
-          backgroundColor: maroon,
-          elevation: 6,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: const Icon(Icons.add, size: 30, color: Colors.white),
-        ),
-      ),
+      floatingActionButton: showFab
+          ? SizedBox(
+              height: 48,
+              width: 48,
+              child: FloatingActionButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => AddPostPage()),
+                  );
+                },
+                backgroundColor: maroon,
+                elevation: 6,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(Icons.add, size: 30, color: Colors.white),
+              ),
+            )
+          : null,
 
       bottomNavigationBar: BottomAppBar(
         color: Colors.white,
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 8,
+        // only show notch when FAB is present
+        shape: showFab ? const CircularNotchedRectangle() : null,
+        notchMargin: showFab ? 8 : 0,
         child: SizedBox(
           height: 50,
           child: Row(
