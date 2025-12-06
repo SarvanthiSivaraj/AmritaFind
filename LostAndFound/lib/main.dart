@@ -17,8 +17,8 @@ class LostFoundApp extends StatelessWidget {
       title: "Lost & Found - Amrita",
       theme: ThemeData(
         fontFamily: "Poppins",
-        primaryColor: Color(0xFF8C2F39),
-        scaffoldBackgroundColor: Color(0xFFFDF8F5),
+        primaryColor: const Color(0xFF8C2F39),
+        scaffoldBackgroundColor: const Color(0xFFFDF8F5),
       ),
       home: MainNavigation(),
     );
@@ -37,34 +37,138 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: pages[currentIndex],
+    const maroon = Color(0xFF8C2F39);
 
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Color(0xFF8C2F39),
-        child: Icon(Icons.add),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => AddPostPage()),
-          );
-        },
+    return Scaffold(
+      // APP BAR with perfectly centered title + subtitle
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(110),
+        child: AppBar(
+          backgroundColor: maroon,
+          elevation: 6,
+          automaticallyImplyLeading: false,
+          // Use flexibleSpace so we can perfectly center vertically & horizontally
+          flexibleSpace: SafeArea(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center, // vertical center
+                children: const [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.search, color: Colors.white, size: 22),
+                      SizedBox(width: 8),
+                      Text(
+                        "Lost & Found",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 6),
+                  Text(
+                    "Amrita Campus",
+                    style: TextStyle(
+                      color: Color(0xFFF2D6D8),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
 
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: currentIndex,
-        selectedItemColor: Color(0xFF8C2F39),
-        unselectedItemColor: Colors.grey,
-        onTap: (i) => setState(() => currentIndex = i),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Feed"),
-          BottomNavigationBarItem(icon: Icon(Icons.chat), label: "Chats"),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.smart_toy),
-            label: "Assistant",
+      // current page content
+      body: pages[currentIndex],
+
+      // place FAB in center with docked notch
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: SizedBox(
+        height: 64,
+        width: 64,
+        child: FloatingActionButton(
+          onPressed: () {
+            // currently opens AddPostPage -- change to camera/picker if needed
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => AddPostPage()),
+            );
+          },
+          backgroundColor: maroon,
+          elevation: 6,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
-        ],
+          child: const Icon(Icons.add, size: 30,color: Colors.white,),
+        ),
+      ),
+
+      // BottomAppBar with notch to host the centered FAB
+      bottomNavigationBar: BottomAppBar(
+        color: Colors.white,
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 8,
+        child: SizedBox(
+          height: 64,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              // Left side icons (Home, Chats)
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        Icons.home,
+                        color: currentIndex == 0 ? maroon : Colors.grey,
+                      ),
+                      onPressed: () => setState(() => currentIndex = 0),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.chat,
+                        color: currentIndex == 1 ? maroon : Colors.grey,
+                      ),
+                      onPressed: () => setState(() => currentIndex = 1),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Spacer for the FAB notch (keeps even spacing)
+              const SizedBox(width: 8),
+
+              // Right side icons (Assistant, Profile)
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        Icons.smart_toy,
+                        color: currentIndex == 2 ? maroon : Colors.grey,
+                      ),
+                      onPressed: () => setState(() => currentIndex = 2),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.person,
+                        color: currentIndex == 3 ? maroon : Colors.grey,
+                      ),
+                      onPressed: () => setState(() => currentIndex = 3),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
