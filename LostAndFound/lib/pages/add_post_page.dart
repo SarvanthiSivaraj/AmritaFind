@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AddPostPage extends StatefulWidget {
   const AddPostPage({super.key});
@@ -18,6 +21,10 @@ class _AddPostPageState extends State<AddPostPage> {
   String _category = "Lost";
   String _location = "";
 
+  // image picker fields
+  final ImagePicker _picker = ImagePicker();
+  XFile? _pickedImage;
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -27,13 +34,78 @@ class _AddPostPageState extends State<AddPostPage> {
     super.dispose();
   }
 
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? picked = await _picker.pickImage(
+        source: source,
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 80,
+      );
+      if (picked == null) return;
+      setState(() => _pickedImage = picked);
+    } catch (e) {
+      // you can show an error SnackBar if needed
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Failed to pick image: $e")));
+    }
+  }
+
+  void _showImageOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Take photo'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Choose from gallery'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+              if (_pickedImage != null)
+                ListTile(
+                  leading: const Icon(Icons.delete, color: Colors.red),
+                  title: const Text('Remove photo', style: TextStyle(color: Colors.red)),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    setState(() => _pickedImage = null);
+                  },
+                ),
+              ListTile(
+                leading: const Icon(Icons.close),
+                title: const Text('Cancel'),
+                onTap: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text("Post submitted! (hook API later)")));
+    // For demonstration: show selected image path (if any)
+    final imgPath = _pickedImage?.path ?? "No image";
 
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Post submitted! Image: $imgPath")),
+    );
+
+    // TODO: upload the image + form fields to backend
     Navigator.pop(context);
   }
 
@@ -43,8 +115,11 @@ class _AddPostPageState extends State<AddPostPage> {
     const creamDark = Color(0xFFF5EDE8);
 
     return Scaffold(
-      appBar: AppBar(title: Text("Report Item"), backgroundColor: maroon),
-      backgroundColor: Color(0xFFFDF8F5),
+      appBar: AppBar(
+        title: const Text("Report Item"),
+        backgroundColor: maroon,
+      ),
+      backgroundColor: const Color(0xFFFDF8F5),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Form(
@@ -52,7 +127,7 @@ class _AddPostPageState extends State<AddPostPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Your Name"),
+              const Text("Your Name"),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _nameController,
@@ -61,7 +136,7 @@ class _AddPostPageState extends State<AddPostPage> {
               ),
               const SizedBox(height: 16),
 
-              Text("Category"),
+              const Text("Category"),
               const SizedBox(height: 6),
               Row(
                 children: [
@@ -84,7 +159,7 @@ class _AddPostPageState extends State<AddPostPage> {
               ),
               const SizedBox(height: 16),
 
-              Text("Item Type"),
+              const Text("Item Type"),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _itemTypeController,
@@ -93,7 +168,7 @@ class _AddPostPageState extends State<AddPostPage> {
               ),
               const SizedBox(height: 16),
 
-              Text("Description"),
+              const Text("Description"),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _descriptionController,
@@ -104,7 +179,7 @@ class _AddPostPageState extends State<AddPostPage> {
               ),
               const SizedBox(height: 16),
 
-              Text("Location"),
+              const Text("Location"),
               const SizedBox(height: 6),
               DropdownButtonFormField<String>(
                 value: _location.isEmpty ? null : _location,
@@ -124,7 +199,7 @@ class _AddPostPageState extends State<AddPostPage> {
               ),
               const SizedBox(height: 16),
 
-              Text("Contact Number (Optional)"),
+              const Text("Contact Number (Optional)"),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _contactController,
@@ -133,27 +208,36 @@ class _AddPostPageState extends State<AddPostPage> {
               ),
               const SizedBox(height: 16),
 
-              Text("Upload Image"),
+              const Text("Upload Image"),
               const SizedBox(height: 6),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: creamDark,
-                    style: BorderStyle.solid,
-                    width: 2,
+              GestureDetector(
+                onTap: _showImageOptions,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: creamDark,
+                      style: BorderStyle.solid,
+                      width: 2,
+                    ),
+                    color: _pickedImage == null ? Colors.transparent : Colors.white,
                   ),
-                ),
-                alignment: Alignment.center,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Icon(Icons.camera_alt, size: 32, color: maroon),
-                    SizedBox(height: 8),
-                    Text("Tap to upload photo (todo)"),
-                  ],
+                  alignment: Alignment.center,
+                  child: _pickedImage != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: AspectRatio(
+                            aspectRatio: 16 / 9,
+                            child: Image.file(
+                              File(_pickedImage!.path),
+                              fit: BoxFit.cover,
+                              errorBuilder: (c, e, s) => _placeholder(maroon),
+                            ),
+                          ),
+                        )
+                      : _placeholder(maroon),
                 ),
               ),
               const SizedBox(height: 24),
@@ -180,6 +264,18 @@ class _AddPostPageState extends State<AddPostPage> {
     );
   }
 
+  // small helper to keep the placeholder consistent
+  Widget _placeholder(Color maroon) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.camera_alt, size: 32, color: maroon),
+        const SizedBox(height: 8),
+        const Text("Tap to upload photo (todo)"),
+      ],
+    );
+  }
+
   InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
@@ -187,15 +283,15 @@ class _AddPostPageState extends State<AddPostPage> {
       fillColor: Colors.white,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Color(0xFFF5EDE8), width: 2),
+        borderSide: const BorderSide(color: Color(0xFFF5EDE8), width: 2),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Color(0xFFF5EDE8), width: 2),
+        borderSide: const BorderSide(color: Color(0xFFF5EDE8), width: 2),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Color(0xFF8C2F39), width: 2),
+        borderSide: const BorderSide(color: Color(0xFF8C2F39), width: 2),
       ),
     );
   }
@@ -210,10 +306,10 @@ class _AddPostPageState extends State<AddPostPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: selected ? Color(0xFF8C2F39) : Colors.white,
+          color: selected ? const Color(0xFF8C2F39) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: selected ? Color(0xFF8C2F39) : Color(0xFFF5EDE8),
+            color: selected ? const Color(0xFF8C2F39) : const Color(0xFFF5EDE8),
             width: 2,
           ),
         ),
