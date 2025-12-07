@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'post_item_form_page.dart';
 import 'chat_page.dart';
+import 'profile_page.dart';
 
 /// COLORS SHARED
 const Color kPrimary = Color(0xFF8C2F39);
@@ -49,7 +50,21 @@ class HomePageFeed extends StatelessWidget {
             ),
           ],
         ),
-        actions: const [SizedBox(width: 40, height: 40)],
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Center(
+              child: IconButton(
+                icon: Icon(Icons.person, color: kPrimary, size: 28),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: kPrimary,
