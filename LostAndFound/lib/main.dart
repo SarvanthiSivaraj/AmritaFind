@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'pages/home_page.dart';
+import 'pages/onboarding_screen.dart';
 
 void main() {
   runApp(
@@ -7,7 +8,7 @@ void main() {
       debugShowCheckedModeBanner: false,
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),
-      home: const HomePageFeed(),
+      home: OnboardingScreen(),
     ),
   );
 }
