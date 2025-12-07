@@ -3,11 +3,10 @@ import 'pages/home_page.dart';
 import 'pages/onboarding_screen.dart';
 
 void main() {
-  runApp(
+    runApp(
     MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData.light(),
-      darkTheme: ThemeData.dark(),
       home: OnboardingScreen(),
     ),
   );

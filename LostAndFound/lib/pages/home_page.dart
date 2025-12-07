@@ -17,22 +17,17 @@ class HomePageFeed extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
+    // Light theme only
     final cardLight = const Color(0xFFFFFFFF);
-    final cardDark = const Color(0xFF2A2122);
     final textPrimaryLight = const Color(0xFF333333);
-    final textPrimaryDark = const Color(0xFFF2F2F2);
     final textSecondaryLight = const Color(0xFF757575);
-    final textSecondaryDark = const Color(0xFFA09C9C);
     final chipLight = const Color(0xFFF0EBEA);
-    final chipDark = const Color(0xFF3C3334);
 
-    Color bgColor = isDark ? kBackgroundDark : kBackgroundLight;
-    Color cardColor = isDark ? cardDark : cardLight;
-    Color textPrimary = isDark ? textPrimaryDark : textPrimaryLight;
-    Color textSecondary = isDark ? textSecondaryDark : textSecondaryLight;
-    Color chipColor = isDark ? chipDark : chipLight;
+    Color bgColor = kBackgroundLight;
+    Color cardColor = cardLight;
+    Color textPrimary = textPrimaryLight;
+    Color textSecondary = textSecondaryLight;
+    Color chipColor = chipLight;
 
     return Scaffold(
       backgroundColor: bgColor,

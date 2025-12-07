@@ -36,11 +36,11 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? kBackgroundDark : const Color(0xFFF8F6F6);
-    final textMain = isDark ? Colors.white : Colors.black87;
-    final textSecondary = isDark ? Colors.grey[400]! : Colors.grey[500]!;
-    final chipBg = kPrimaryChat.withOpacity(isDark ? 0.2 : 0.1);
+    // Light theme only
+    final bg = const Color(0xFFF8F6F6);
+    final textMain = Colors.black87;
+    final textSecondary = Colors.grey[500]!;
+    final chipBg = kPrimaryChat.withOpacity(0.1);
 
     return Scaffold(
       backgroundColor: bg,
@@ -132,9 +132,7 @@ class _ChatPageState extends State<ChatPage> {
                               child: Text(
                                 'Regarding: Blue Water Bottle',
                                 style: TextStyle(
-                                  color: isDark
-                                      ? Colors.pink[50]
-                                      : kPrimaryChat,
+                                  color: kPrimaryChat,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -221,27 +219,21 @@ class _ChatPageState extends State<ChatPage> {
                             hintText: 'Type a message...',
                             hintStyle: TextStyle(color: textSecondary),
                             filled: true,
-                            fillColor: isDark
-                                ? const Color(0xFF27272F)
-                                : const Color(0xFFE4E4E7),
+                            fillColor: const Color(0xFFE4E4E7),
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 16,
                               vertical: 12,
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(999),
-                              borderSide: BorderSide(
-                                color: isDark
-                                    ? const Color(0xFF3F3F46)
-                                    : const Color(0xFFE5E7EB),
+                              borderSide: const BorderSide(
+                                color: const Color(0xFFE5E7EB),
                               ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(999),
-                              borderSide: BorderSide(
-                                color: isDark
-                                    ? const Color(0xFF3F3F46)
-                                    : const Color(0xFFE5E7EB),
+                              borderSide: const BorderSide(
+                                color: const Color(0xFFE5E7EB),
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
@@ -249,9 +241,7 @@ class _ChatPageState extends State<ChatPage> {
                               borderSide: const BorderSide(color: kPrimaryChat),
                             ),
                           ),
-                          style: TextStyle(
-                            color: isDark ? Colors.white : Colors.black,
-                          ),
+                          style: const TextStyle(color: Colors.black),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -315,10 +305,9 @@ class _ReceivedMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textSecondary = isDark ? Colors.grey[400]! : Colors.grey[500]!;
-    final bubbleBg = isDark ? const Color(0xFF3F3F46) : const Color(0xFFE5E5E5);
-    final bubbleText = isDark ? Colors.white : const Color(0xFF18181B);
+    final textSecondary = Colors.grey[500]!;
+    final bubbleBg = const Color(0xFFE5E5E5);
+    final bubbleText = const Color(0xFF18181B);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -377,9 +366,7 @@ class _SentMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textSecondary = Theme.of(context).brightness == Brightness.dark
-        ? Colors.grey[400]!
-        : Colors.grey[500]!;
+    final textSecondary = Colors.grey[500]!;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,

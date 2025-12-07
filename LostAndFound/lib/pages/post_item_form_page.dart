@@ -31,22 +31,17 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
+    // Light theme only
     final surfaceLight = const Color(0xFFFFFFFF);
-    final surfaceDark = const Color(0xFF2C2C2C);
     final textPrimaryLight = const Color(0xFF333333);
-    final textPrimaryDark = const Color(0xFFF5F5F5);
     final textSecondaryLight = const Color(0xFF888888);
-    final textSecondaryDark = const Color(0xFFA0A0A0);
     final borderLight = const Color(0xFFEAEAEA);
-    final borderDark = const Color(0xFF444444);
 
-    final bg = isDark ? kBackgroundDark : kBackgroundLight;
-    final surface = isDark ? surfaceDark : surfaceLight;
-    final textPrimary = isDark ? textPrimaryDark : textPrimaryLight;
-    final textSecondary = isDark ? textSecondaryDark : textSecondaryLight;
-    final borderColor = isDark ? borderDark : borderLight;
+    final bg = kBackgroundLight;
+    final surface = surfaceLight;
+    final textPrimary = textPrimaryLight;
+    final textSecondary = textSecondaryLight;
+    final borderColor = borderLight;
 
     return Scaffold(
       backgroundColor: bg,
@@ -60,7 +55,7 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
                 color: surface,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.25 : 0.05),
+                    color: Colors.black.withOpacity(0.05),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -377,7 +372,7 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
                 color: surface,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
+                    color: Colors.black.withOpacity(0.05),
                     blurRadius: 8,
                     offset: const Offset(0, -3),
                   ),
