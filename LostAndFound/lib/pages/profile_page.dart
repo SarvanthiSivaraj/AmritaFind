@@ -34,10 +34,11 @@ class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = [
-    const ProfileScreen(),
+    const ProfileScreen(), // now stateful and can handle returned edits
     const LoginScreen(),
-    const EditProfileScreen(),
-    const PasswordResetScreen(),
+    // keep these placeholders if you need them in the nav
+    const SizedBox.shrink(),
+    const SizedBox.shrink(),
     const SettingsScreen(),
   ];
 
@@ -64,11 +65,61 @@ class _MainNavigationState extends State<MainNavigation> {
   }
 }
 
-class ProfileScreen extends StatelessWidget {
+/// PROFILE SCREEN (now Stateful so it can receive edited data)
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  // sample user data (would normally come from API / local storage)
+  String _fullName = 'Priya Sharma';
+  String _subtitle = 'Student - CSE 2025';
+  String _contact = '+1 234 567 890';
+  String avatarUrl =
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuAMxisfuLYqWlfzdXkLn2g9unw9mSIugRMhtVx2mu19aqfMBsehgsqtawXOhviaM0rt7IlY7IUqG42ntfLRs5vbUKTkSa9BJ-Wk_rlWjyHunrULSqIZ36u0kaCWw6bgl7KcnHVrMr004XjHMIekcaMt1SdW6sXMBiawB0T1dc55dCKXtCP9mpzoyvJlSGzb5x9UArZayvExyoIqeIxU0FpNm9Ial88_QviYQb56rzNnLTk7PA3NWJlgVvLhh_DkPuz8aHhFxHd4Ol_6';
+
+  // For better scroll behavior on small screens
+  final _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _openEditProfile() async {
+    // push edit screen and wait for result
+    final result = await Navigator.push<Map<String, String>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditProfileScreen(
+          initialName: _fullName,
+          initialContact: _contact,
+          avatarUrl: avatarUrl,
+        ),
+      ),
+    );
+
+    // If the edit screen returned data, update UI
+    if (result != null) {
+      setState(() {
+        _fullName = result['name'] ?? _fullName;
+        _contact = result['contact'] ?? _contact;
+      });
+
+      // optional: show a snack confirming saved changes
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Profile updated')));
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // keep layout responsive
     return Scaffold(
       backgroundColor: const Color(0xFFFAF9F6),
       appBar: AppBar(
@@ -86,6 +137,7 @@ class ProfileScreen extends StatelessWidget {
         ],
       ),
       body: SingleChildScrollView(
+        controller: _scrollController,
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
@@ -94,51 +146,62 @@ class ProfileScreen extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
+                  // avatar
                   Container(
                     width: 128,
                     height: 128,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      image: const DecorationImage(
-                        image: NetworkImage(
-                          'https://lh3.googleusercontent.com/aida-public/AB6AXuAMxisfuLYqWlfzdXkLn2g9unw9mSIugRMhtVx2mu19aqfMBsehgsqtawXOhviaM0rt7IlY7IUqG42ntfLRs5vbUKTkSa9BJ-Wk_rlWjyHunrULSqIZ36u0kaCWw6bgl7KcnHVrMr004XjHMIekcaMt1SdW6sXMBiawB0T1dc55dCKXtCP9mpzoyvJlSGzb5x9UArZayvExyoIqeIxU0FpNm9Ial88_QviYQb56rzNnLTk7PA3NWJlgVvLhh_DkPuz8aHhFxHd4Ol_6',
-                        ),
+                      image: DecorationImage(
+                        image: NetworkImage(avatarUrl),
                         fit: BoxFit.cover,
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Priya Sharma',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  Text(
+                    _fullName,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  const Text(
-                    'Student - CSE 2025',
-                    style: TextStyle(fontSize: 16, color: Color(0xFF757575)),
+                  const SizedBox(height: 6),
+                  Text(
+                    _subtitle,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Color(0xFF757575),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: _openEditProfile,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(
                           0xFF8C2F39,
-                        ).withOpacity(0.2),
+                        ).withOpacity(0.12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Edit Profile',
-                        style: TextStyle(color: Color(0xFF8C2F39)),
+                        style: TextStyle(
+                          color: const Color(0xFF8C2F39),
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            // Tabs
+
+            // Tabs (visual only for now)
             Container(
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               decoration: BoxDecoration(
@@ -152,7 +215,9 @@ class ProfileScreen extends StatelessWidget {
                 ],
               ),
             ),
-            // Posts List
+
+            // Posts List (sample cards)
+            const SizedBox(height: 12),
             ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -181,10 +246,15 @@ class ProfileScreen extends StatelessWidget {
                 ];
                 final item = items[index];
                 return Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(12),
                     child: Row(
                       children: [
+                        // text area
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -209,6 +279,7 @@ class ProfileScreen extends StatelessWidget {
                                   ),
                                 ),
                               ),
+                              const SizedBox(height: 8),
                               Text(
                                 item['title'] as String,
                                 style: const TextStyle(
@@ -216,13 +287,20 @@ class ProfileScreen extends StatelessWidget {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
+                              const SizedBox(height: 4),
                               Text(
                                 'Posted on: ${item['date']}',
-                                style: TextStyle(color: Colors.grey.shade600),
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 13,
+                                ),
                               ),
                             ],
                           ),
                         ),
+
+                        // image thumbnail
+                        const SizedBox(width: 12),
                         Container(
                           width: 100,
                           height: 80,
@@ -231,9 +309,9 @@ class ProfileScreen extends StatelessWidget {
                             image: DecorationImage(
                               image: NetworkImage(
                                 [
-                                  'https://lh3.googleusercontent.com/aida-public/AB6AXuBU7jZC5x85yyM-CL8HgMpukXCcnoso0-FP9rz7M48jXdHFxWpLYnjEnnObx_GP0eqdp1i6WNxyBKpdn8Kod1mOl5ZlTcoTEQ8B71_6QxslVCXIh0iHSlDyI2ptgCcsibZOEoSuHPst7h6t1GUEOPSUPZWs_mKZEO0SHVtMgSqHQPr0XYq0C-7SpU_8xklEuY3kf3qDhg7DeZA80Ngh9BqcG7mihShBsW3JLdrKwONbSNoeSj8iggwLEl0eQaPsI9skyd7ZRgaI6IkW',
-                                  'https://lh3.googleusercontent.com/aida-public/AB6AXuC9EOCjTa_zNYXj61lCnlGi0FGM4iBF173MiGs-tJyD8xOf3HavT4keaHWtzDuLecnGjxl--wxt2M6D9rqkUktjzQFHQEJamjq8kDYHrybff6FJKyX7H4aqhG8wZfBfSOZc_9s3Ww2RQDPbSlaFw0bCoTKtiTDX_-tM3uyFeYgr3squ_ILTTJXJfyctngWeQuP3jKdk3Nzm6kRlPAGQVDaTwwDalXWgd8wt8cRpo-QDZE5cQ8L66kP4aiSR4ffrVN0imfkvv_wK-ABo',
-                                  'https://lh3.googleusercontent.com/aida-public/AB6AXuBbHRt9vmt9SpZ4Q-k21oUkA4HhXY7bJo_JAnKVqsq6QVlRmvaKtEvho2YB73GrsBrE-vyKp8yOnH1KT-v1h7kGNfsLblgtFzsoiuiuGJdRe-dXtBqLFZlDBkQS4A0f6tnpqw8YTwuiwviS9P7vV4qmj2V15HJUT7eHY1xiybU3cWx-hJZ3wdGf030YthvrXnvDN54CRYlD5KkIKByia4KuA35PgDvWC1EoH4LUohr8q7zf454pcxZ1y8NAtdQANvwyiwhClg5istjv',
+                                  'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&q=80',
+                                  'https://images.unsplash.com/photo-1541534401786-2c3d1f1f3f54?w=800&q=80',
+                                  'https://images.unsplash.com/photo-1585386959984-a415522b6fdf?w=800&q=80',
                                 ][index],
                               ),
                               fit: BoxFit.cover,
@@ -266,185 +344,61 @@ class ProfileScreen extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           title,
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+            color: isActive ? Colors.black : Colors.grey,
+          ),
         ),
       ],
     );
   }
 }
 
-class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
+/// EDIT PROFILE SCREEN that returns edited values when saved
+class EditProfileScreen extends StatefulWidget {
+  final String initialName;
+  final String initialContact;
+  final String avatarUrl;
+  const EditProfileScreen({
+    super.key,
+    required this.initialName,
+    required this.initialContact,
+    required this.avatarUrl,
+  });
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFDFBF7),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              // Header
-              Column(
-                children: [
-                  Image.network(
-                    'https://lh3.googleusercontent.com/aida-public/AB6AXuDiQUacZ7nZa_jeyqNctfBo8LMORygeGPqIUEN4UMRhxjHnqxppOaVqZPjPorS7thY-dFjqrlK8sCI4FY783F5l_tB5tIDXLZkglnA_UbXJ0Y_pbCjErT7JxNAfSAGuV_AbLb7q73yNyabBSamPHQjDYVqO4cAx-gvaTcaUyUF5vog85cC14G29n54ekkqmPJVygl4baOgjDY5uKmRbyxJtUHRZw-dl25P56mHFB5q6I2E7uz8SuVIw8U-tiBN8n7A9kFnzw3YLBo-8',
-                    height: 64,
-                  ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Welcome Back',
-                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-                  ),
-                  const Text(
-                    'Find what\'s lost on campus.',
-                    style: TextStyle(fontSize: 16, color: Color(0xFF999999)),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              // Form
-              Column(
-                children: [
-                  _buildTextField(
-                    'Amrita Email',
-                    'yourname@am.students.amrita.edu',
-                    Icons.email,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildPasswordField(),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () {},
-                      child: const Text(
-                        'Forgot Password?',
-                        style: TextStyle(color: Color(0xFF8C2F39)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF8C2F39),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: const Text(
-                        'Login',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  RichText(
-                    text: TextSpan(
-                      style: const TextStyle(color: Color(0xFF999999)),
-                      children: [
-                        const TextSpan(text: "Don't have an account? "),
-                        TextSpan(
-                          text: 'Sign Up',
-                          style: const TextStyle(
-                            color: Color(0xFF8C2F39),
-                            fontWeight: FontWeight.bold,
-                          ),
-                          recognizer: TapGestureRecognizer()..onTap = () {},
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const Spacer(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextField(String label, String hint, IconData icon) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(color: Color(0xFF999999)),
-            prefixIcon: Icon(icon, color: const Color(0xFF8C2F39)),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Color(0xFF8C2F39)),
-            ),
-            filled: true,
-            fillColor: Colors.white,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPasswordField() {
-    bool _obscureText = true;
-    return StatefulBuilder(
-      builder: (context, setState) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Password',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            obscureText: _obscureText,
-            decoration: InputDecoration(
-              hintText: 'Enter your password',
-              hintStyle: const TextStyle(color: Color(0xFF999999)),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscureText ? Icons.visibility : Icons.visibility_off,
-                ),
-                onPressed: () => setState(() => _obscureText = !_obscureText),
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(color: Colors.grey.shade300),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: Color(0xFF8C2F39)),
-              ),
-              filled: true,
-              fillColor: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  State<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
-class EditProfileScreen extends StatelessWidget {
-  const EditProfileScreen({super.key});
+class _EditProfileScreenState extends State<EditProfileScreen> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _contactController;
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  void initState() {
+    _nameController = TextEditingController(text: widget.initialName);
+    _contactController = TextEditingController(text: widget.initialContact);
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _contactController.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    if (_formKey.currentState?.validate() ?? false) {
+      // return updated values to previous screen
+      Navigator.of(context).pop({
+        'name': _nameController.text.trim(),
+        'contact': _contactController.text.trim(),
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -457,184 +411,172 @@ class EditProfileScreen extends StatelessWidget {
         ),
         title: const Text('Edit Profile'),
         elevation: 1,
+        backgroundColor: const Color(0xFF8C2F39),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // Profile Picture
-            Center(
-              child: Stack(
-                children: [
-                  Container(
-                    width: 128,
-                    height: 128,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      image: const DecorationImage(
-                        image: NetworkImage(
-                          'https://lh3.googleusercontent.com/aida-public/AB6AXuCAD_q0PPeX_FZSo5MTED2wI1CaBJUM_u6oleQ3JxFAJBVV84MuSOgQLKIAcgLWJ__dI0R-Y4HnJFmuewPVSJwcPQQqbkqdvTkS4qI_N5VE4leUeVmCLgwyXURfUq1BPDtYzOJlLQp8py79lcyLvHbMyn3xF9eEVtFoSr-O3WwTayMWPEgXgKY4wWRkWo10pv5iQLegqp47NlY7lipihIyLVDvwdtVbAwbwmp2N65hRAEXA9AVWlHx9H5W14CMPtDUgaDoiyNW3fjtm',
-                        ),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF8C2F39),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.edit,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 40),
-            // Form Fields
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // avatar + edit icon
+              Center(
+                child: Stack(
                   children: [
-                    _buildFormField('Full Name', 'Alexender Jordan'),
-                    const SizedBox(height: 24),
-                    _buildFormField('Contact Number', '+1 234 567 890'),
+                    Container(
+                      width: 128,
+                      height: 128,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        image: DecorationImage(
+                          image: NetworkImage(widget.avatarUrl),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: InkWell(
+                        onTap: () {
+                          // TODO: hook image picker
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Change photo not implemented'),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF8C2F39),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.edit,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Colors.grey.shade300)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF8C2F39),
-              ),
-              child: const Text(
-                'Save Changes',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+
+              const SizedBox(height: 28),
+
+              // form
+              Form(
+                key: _formKey,
+                child: Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        // Full name
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Full Name',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey.shade800,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _nameController,
+                          decoration: InputDecoration(
+                            hintText: 'Enter your full name',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                          ),
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? 'Please enter a name'
+                              : null,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Contact
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Contact Number',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey.shade800,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _contactController,
+                          keyboardType: TextInputType.phone,
+                          decoration: InputDecoration(
+                            hintText: 'Enter your contact number',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                          ),
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? 'Please enter a contact'
+                              : null,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
+
+              const Spacer(),
+
+              // Save button (sticky feel)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: _save,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF8C2F39),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Save Changes',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildFormField(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: TextEditingController(text: value),
-          decoration: InputDecoration(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            contentPadding: const EdgeInsets.all(16),
-          ),
-        ),
-      ],
     );
   }
 }
 
-class PasswordResetScreen extends StatelessWidget {
-  const PasswordResetScreen({super.key});
+/// Other screens (kept minimal for completeness)
+class LoginScreen extends StatelessWidget {
+  const LoginScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9F9),
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text('Password Reset'),
-        elevation: 0,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Forgot Password?',
-              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Enter your registered email address to receive a password reset link.',
-            ),
-            const Spacer(),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 32),
-              child: TextField(
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.mail),
-                  hintText: 'Email Address',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                ),
-              ),
-            ),
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF8C2F39),
-                ),
-                child: const Text(
-                  'Send Reset Link',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () {},
-              child: const Text(
-                'Back to Login',
-                style: TextStyle(color: Color(0xFF8C2F39)),
-              ),
-            ),
-          ],
-        ),
-      ),
+      backgroundColor: const Color(0xFFFDFBF7),
+      body: const Center(child: Text('Login placeholder')),
     );
   }
 }
@@ -647,121 +589,12 @@ class SettingsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFFAF9F6),
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new),
-          onPressed: () => Navigator.pop(context),
-        ),
         title: const Text('Settings'),
         elevation: 1,
+        backgroundColor: const Color(0xFF8C2F39),
       ),
       body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildSection('Notifications', [
-              _buildSettingRow(Icons.notifications, 'New Post Alerts', true),
-              _buildSettingRow(Icons.task_alt, 'Item Status Updates', false),
-            ]),
-            _buildSection('Privacy', [
-              _buildNavRow(Icons.visibility, 'Contact Info Visibility'),
-            ]),
-            _buildSection('Account', [
-              _buildNavRow(Icons.lock_reset, 'Change Password'),
-              _buildNavRow(Icons.logout, 'Logout'),
-              _buildDangerRow(Icons.delete, 'Delete Account'),
-            ]),
-            _buildSection('General', [
-              _buildNavRow(Icons.info, 'About Us'),
-              _buildNavRow(Icons.help, 'Help & FAQ'),
-              _buildNavRow(Icons.feedback, 'Send Feedback'),
-            ]),
-            const SizedBox(height: 32),
-            const Text(
-              'App Version 1.0.0',
-              style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSection(String title, List<Widget> children) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Text(
-              title.toUpperCase(),
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF6B7280),
-              ),
-            ),
-          ),
-          Card(child: Column(children: children)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSettingRow(IconData icon, String title, bool isEnabled) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: const Color(0xFF8C2F39)),
-              const SizedBox(width: 16),
-              Expanded(child: Text(title)),
-            ],
-          ),
-          Switch(value: isEnabled, onChanged: (value) {}),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavRow(IconData icon, String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: const Color(0xFF8C2F39)),
-              const SizedBox(width: 16),
-              Expanded(child: Text(title)),
-            ],
-          ),
-          const Icon(Icons.chevron_right, color: Color(0xFF6B7280)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDangerRow(IconData icon, String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: Colors.red),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(title, style: const TextStyle(color: Colors.red)),
-              ),
-            ],
-          ),
-        ],
+        child: Column(children: const [SizedBox(height: 24), Text('Settings')]),
       ),
     );
   }

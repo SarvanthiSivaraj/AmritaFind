@@ -11,136 +11,168 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _currentPage = 0;
 
   final List<Widget> _pages = [
-    // Welcome Screen
     _WelcomePage(),
-    // Post Feature Screen
     _PostFeaturePage(),
-    // Chat & Bot Feature Screen
     _ChatBotPage(),
   ];
 
   @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _goNext() {
+    if (_currentPage < _pages.length - 1) {
+      _pageController.nextPage(
+        duration: Duration(milliseconds: 300),
+        curve: Curves.ease,
+      );
+    } else {
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => HomePageFeed()));
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Use a Column so PageView receives definite width from parent and won't overflow
     return Scaffold(
-      body: Stack(
-        children: [
-          PageView(
-            controller: _pageController,
-            onPageChanged: (index) {
-              setState(() {
-                _currentPage = index;
-              });
-            },
-            children: _pages,
-          ),
-          Positioned(
-            top: 16,
-            right: 16,
-            child: TextButton(
-              onPressed: () {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (_) => HomePageFeed()),
-                );
-              },
-              child: Text('Skip', style: TextStyle(color: Colors.grey[600])),
-            ),
-          ),
-          Positioned(
-            bottom: 32,
-            left: 0,
-            right: 0,
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    _pages.length,
-                    (index) => Container(
-                      margin: EdgeInsets.symmetric(horizontal: 4),
-                      width: index == _currentPage ? 24 : 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: index == _currentPage
-                            ? Colors.red[600]
-                            : Colors.grey[300],
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    if (_currentPage < _pages.length - 1) {
-                      _pageController.nextPage(
-                        duration: Duration(milliseconds: 300),
-                        curve: Curves.ease,
-                      );
-                    } else {
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Top bar with Skip aligned to right
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12.0,
+                vertical: 8.0,
+              ),
+              child: Row(
+                children: [
+                  Spacer(),
+                  TextButton(
+                    onPressed: () {
                       Navigator.of(context).pushReplacement(
                         MaterialPageRoute(builder: (_) => HomePageFeed()),
                       );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red[600],
-                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
+                    },
+                    child: Text(
+                      'Skip',
+                      style: TextStyle(color: Colors.grey[600]),
                     ),
                   ),
-                  child: Text(
-                    _currentPage == _pages.length - 1 ? 'Finish' : 'Next',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+
+            // PageView inside Expanded so it gets the available width and height
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (index) => setState(() => _currentPage = index),
+                children: _pages,
+              ),
+            ),
+
+            // Bottom pagination dots + Next/Finish button
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(
+                      _pages.length,
+                      (index) => Container(
+                        margin: EdgeInsets.symmetric(horizontal: 4),
+                        width: index == _currentPage ? 24 : 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: index == _currentPage
+                              ? Colors.red[600]
+                              : Colors.grey[300],
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _goNext,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red[600],
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                      ),
+                      child: Text(
+                        _currentPage == _pages.length - 1 ? 'Finish' : 'Next',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
+/// Helpers for each page: each page uses LayoutBuilder + SingleChildScrollView
 class _WelcomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.grey[100],
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 160,
-            height: 160,
-            decoration: BoxDecoration(
-              color: Colors.red[600]?.withOpacity(0.1),
-              shape: BoxShape.circle,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Column(
+                children: [
+                  SizedBox(height: 12),
+                  Container(
+                    width: 140,
+                    height: 140,
+                    decoration: BoxDecoration(
+                      color: Colors.red[600]?.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.search, size: 80, color: Colors.red[600]),
+                  ),
+                  SizedBox(height: 24),
+                  Text(
+                    'Welcome to Lost & Found',
+                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    'The easiest way to find your lost items on the Amrita campus.',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Colors.black.withOpacity(0.8),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  Spacer(), // push content to top when there is extra vertical space
+                ],
+              ),
             ),
-            child: Icon(Icons.search, size: 96, color: Colors.red[600]),
           ),
-          SizedBox(height: 32),
-          Text(
-            'Welcome to Lost & Found',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 16),
-          Text(
-            'The easiest way to find your lost items on the Amrita campus.',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.black.withOpacity(0.8),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -148,123 +180,99 @@ class _WelcomePage extends StatelessWidget {
 class _PostFeaturePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.grey[100],
-      child: Column(
-        children: [
-          SizedBox(height: 16),
-          Container(
-            height: 200,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              image: DecorationImage(
-                image: NetworkImage(
-                  'https://lh3.googleusercontent.com/aida-public/AB6AXuDRBIE32O9t4Y9ZmYXH2oRUpYzTcnO3i_bvrs06aRCsw5KQSsBebKNK7g4uKVF7tjP0-Hq9WO4_qAXJ5TQrgOR0aipWgwt-Ka_RovJBzb5S5jc0NEDzqp5f-4j4ZFWAmMlPwkY3iiwwRx8Gi2Sn1ePkHtdKzvZd5mGonyJ5VgVZg34DcwBjhbC-Z7mO5k-RKDGSdOVpOXyEyndmqDcSOSexY_s9OaOVomubydF9mj_tI_T1T_67hbhpVIwYvfGg_fb4E-jzKmP4ihUK',
-                ),
-                fit: BoxFit.cover,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Column(
+                children: [
+                  // image box
+                  Container(
+                    height: 180,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      image: DecorationImage(
+                        image: NetworkImage(
+                          'https://lh3.googleusercontent.com/aida-public/AB6AXuDRBIE32O9t4Y9ZmYXH2oRUpYzTcnO3i_bvrs06aRCsw5KQSsBebKNK7g4uKVF7tjP0-Hq9WO4_qAXJ5TQrgOR0aipWgwt-Ka_RovJBzb5S5jc0NEDzqp5f-4j4ZFWAmMlPwkY3iiwwRx8Gi2Sn1ePkHtdKzvZd5mGonyJ5VgVZg34DcwBjhbC-Z7mO5k-RKDGSdOVpOXyEyndmqDcSOSexY_s9OaOVomubydF9mj_tI_T1T_67hbhpVIwYvfGg_fb4E-jzKmP4ihUK',
+                        ),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 14),
+                  Text(
+                    'Post an Item in Seconds',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 12),
+                  _featureCard(
+                    icon: Icons.help_outline,
+                    title: 'Lost Something?',
+                    subtitle:
+                        'Snap a photo, add details, and post it for the community to see.',
+                  ),
+                  SizedBox(height: 12),
+                  _featureCard(
+                    icon: Icons.waving_hand,
+                    title: 'Found an Item?',
+                    subtitle:
+                        'Help a fellow student by posting the item you found.',
+                  ),
+                  Spacer(),
+                ],
               ),
-              borderRadius: BorderRadius.circular(24),
             ),
           ),
-          SizedBox(height: 16),
-          Text(
-            'Post an Item in Seconds',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
+        );
+      },
+    );
+  }
+
+  Widget _featureCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: Colors.red[600]?.withOpacity(0.1),
+              shape: BoxShape.circle,
             ),
-            textAlign: TextAlign.center,
+            child: Icon(icon, color: Colors.red[600]),
           ),
-          SizedBox(height: 16),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+          SizedBox(width: 12),
+          Expanded(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 12,
-                      ),
-                    ],
-                  ),
-                  padding: EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.help_outline,
-                        color: Colors.red[600],
-                        size: 24,
-                      ),
-                      SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Lost Something?',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Snap a photo, add details, and post it for the community to see.',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[700],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                Text(
+                  title,
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
-                SizedBox(height: 16),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 12,
-                      ),
-                    ],
-                  ),
-                  padding: EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Icon(Icons.waving_hand, color: Colors.red[600], size: 24),
-                      SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Found an Item?',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Help a fellow student by posting the item you found.',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[700],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                SizedBox(height: 6),
+                Text(
+                  subtitle,
+                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                 ),
               ],
             ),
@@ -278,138 +286,89 @@ class _PostFeaturePage extends StatelessWidget {
 class _ChatBotPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Column(
+                children: [
+                  SizedBox(height: 8),
+                  Text(
+                    'Stay Connected & Get Help',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Communicate directly with others and get instant answers from our campus bot.',
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 12),
+                  _chatCard(
+                    icon: Icons.forum,
+                    title: 'Chat with Finders',
+                    subtitle:
+                        'Directly message the person who found your item to arrange a return.',
+                  ),
+                  SizedBox(height: 12),
+                  _chatCard(
+                    icon: Icons.smart_toy,
+                    title: 'Instant Bot Support',
+                    subtitle:
+                        'Our chatbot can answer frequently asked questions about campus locations and procedures 24/7.',
+                  ),
+                  Spacer(),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _chatCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
     return Container(
-      color: Colors.grey[100],
-      child: Column(
+      width: double.infinity,
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10),
+        ],
+      ),
+      child: Row(
         children: [
-          SizedBox(height: 16),
-          Text(
-            'Stay Connected & Get Help',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: Colors.red[600]?.withOpacity(0.1),
+              shape: BoxShape.circle,
             ),
-            textAlign: TextAlign.center,
+            child: Icon(icon, color: Colors.red[600], size: 28),
           ),
-          SizedBox(height: 8),
-          Text(
-            'Communicate directly with others and get instant answers from our campus bot.',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.black.withOpacity(0.8),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 24),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+          SizedBox(width: 12),
+          Expanded(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 12,
-                      ),
-                    ],
-                  ),
-                  padding: EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: Colors.red[600]?.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.forum,
-                          color: Colors.red[600],
-                          size: 24,
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Chat with Finders',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Directly message the person who found your item to arrange a return.',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[700],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                Text(
+                  title,
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
-                SizedBox(height: 16),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 12,
-                      ),
-                    ],
-                  ),
-                  padding: EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: Colors.red[600]?.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.smart_toy,
-                          color: Colors.red[600],
-                          size: 24,
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Instant Bot Support',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Our chatbot can answer frequently asked questions about campus locations and procedures 24/7.',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[700],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                SizedBox(height: 6),
+                Text(
+                  subtitle,
+                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                 ),
               ],
             ),

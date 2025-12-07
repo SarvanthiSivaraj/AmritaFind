@@ -3,6 +3,8 @@ import 'post_item_form_page.dart';
 import 'chat_page.dart';
 import 'profile_page.dart';
 import 'chat_bot_page.dart';
+import 'login_page.dart' as login;
+import '../services/auth_service.dart';
 
 /// COLORS SHARED
 const Color kPrimary = Color(0xFF8C2F39);
@@ -77,10 +79,26 @@ class HomePageFeed extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: kPrimary,
-        onPressed: () {
-          Navigator.of(
-            context,
-          ).push(MaterialPageRoute(builder: (_) => const PostItemFormPage()));
+        onPressed: () async {
+          // Require login before allowing users to post an item.
+          if (AuthService.isLoggedIn) {
+            Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const PostItemFormPage()));
+            return;
+          }
+
+          // If not logged in, navigate to LoginScreen and wait for result.
+          final result = await Navigator.of(context).push<bool?>(
+            MaterialPageRoute(builder: (_) => const login.LoginScreen()),
+          );
+
+          // If the login screen returned true or the auth flag is set, proceed.
+          if (result == true || AuthService.isLoggedIn) {
+            Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const PostItemFormPage()));
+          }
         },
         child: const Icon(Icons.add, size: 28),
       ),

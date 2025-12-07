@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:lostandfound/pages/onboarding_screen.dart';
 import 'pages/home_page.dart';
-import 'pages/onboarding_screen.dart';
 
 void main() {
-    runApp(
+  runApp(
     MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData.light(),
+      themeMode: ThemeMode.light,
       home: OnboardingScreen(),
     ),
   );
