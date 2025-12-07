@@ -1,5 +1,6 @@
 // home_page.dart
-// Full updated file — per-chip small "X" clear buttons (Option A)
+// Filter chips overlay with pinned Clear button on the right.
+// Replace your existing home_page.dart with this file.
 
 import 'package:flutter/material.dart';
 import 'post_item_form_page.dart';
@@ -206,26 +207,23 @@ class _HomePageFeedState extends State<HomePageFeed> {
   }
 
   Future<void> _pickLocationFilter(BuildContext context) async {
-    final picked = await showDialog<String?>(
-      context: context,
-      builder: (ctx) {
-        return SimpleDialog(
-          title: const Text('Filter by location'),
-          children: [
-            SimpleDialogOption(
-              child: const Text('All locations'),
-              onPressed: () => Navigator.pop(ctx, null),
-            ),
-            ..._availableLocations.map((loc) {
-              return SimpleDialogOption(
-                child: Text(loc),
-                onPressed: () => Navigator.pop(ctx, loc),
-              );
-            }),
-          ],
-        );
-      },
-    );
+    final picked = await showDialog<String?>(context: context, builder: (ctx) {
+      return SimpleDialog(
+        title: const Text('Filter by location'),
+        children: [
+          SimpleDialogOption(
+            child: const Text('All locations'),
+            onPressed: () => Navigator.pop(ctx, null),
+          ),
+          ..._availableLocations.map((loc) {
+            return SimpleDialogOption(
+              child: Text(loc),
+              onPressed: () => Navigator.pop(ctx, loc),
+            );
+          }),
+        ],
+      );
+    });
 
     // set selection (picked can be null to clear)
     setState(() {
@@ -270,6 +268,12 @@ class _HomePageFeedState extends State<HomePageFeed> {
     final textSecondary = textSecondaryLight;
     final chipColor = chipLight;
 
+    // top overlay vertical offset (approx below AppBar)
+    final topOverlay = kToolbarHeight + 12.0;
+
+    // Whether any filter is active (useful for showing Clear)
+    final bool anyFilterActive = _statusFilter != 'all' || _selectedDate != null || _selectedLocationFilter != null;
+
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
@@ -297,11 +301,6 @@ class _HomePageFeedState extends State<HomePageFeed> {
               Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.clear_all),
-            tooltip: 'Clear filters',
-            onPressed: _clearFilters,
-          ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -318,209 +317,267 @@ class _HomePageFeedState extends State<HomePageFeed> {
         },
         child: const Icon(Icons.add, size: 28),
       ),
-      body: ListView(
-        padding: const EdgeInsets.only(bottom: 96),
+      // Body uses a Stack so we can overlay the chips near the top (under the AppBar)
+      body: Stack(
         children: [
-          // search bar (not wired to filtering here)
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Container(
-              height: 48,
-              decoration: BoxDecoration(color: chipColor, borderRadius: BorderRadius.circular(16)),
-              child: Row(
-                children: [
-                  const SizedBox(width: 12),
-                  Icon(Icons.search, color: textSecondary),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        border: InputBorder.none,
-                        hintText: "Search for 'water bottle', 'ID card'...",
-                        hintStyle: TextStyle(color: textSecondary),
-                      ),
-                      style: TextStyle(color: textPrimary),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-              ),
-            ),
+          // Main scrollable list (leave top padding so content isn't hidden under overlay)
+          ListView(
+            padding: EdgeInsets.only(top: topOverlay + 72, bottom: 96), // top padding to leave room for search + chips overlay
+            children: [
+              // Cards from filtered & sorted items
+              ..._filteredAndSortedItems.map((item) {
+                return _ItemCard(
+                  title: item['title'],
+                  statusText: item['status'],
+                  statusColorBg: item['statusColorBg'],
+                  statusColorText: item['statusColorText'],
+                  imageUrl: item['imageUrl'],
+                  location: item['location'],
+                  time: item['time'],
+                  buttonText: item['buttonText'],
+                  cardColor: cardColor,
+                  primary: kPrimary,
+                  textPrimary: textPrimary,
+                  textSecondary: textSecondary,
+                  onChatPressed: () {
+                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ChatPage()));
+                  },
+                );
+              }).toList(),
+            ],
           ),
 
-          // Filter chips row (status, location filter, date picker, sort mode toggles)
-          SizedBox(
-            height: 52,
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              scrollDirection: Axis.horizontal,
+          // Positioned search bar + chips overlay near top
+          Positioned(
+            top: 8,
+            left: 12,
+            right: 12,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _FilterChip.withIcon(
-                  label: 'All',
-                  icon: Icons.filter_none,
-                  chipColor: chipColor,
-                  textPrimary: textPrimary,
-                  selected: _statusFilter == 'all',
-                  onTap: () => setState(() => _statusFilter = 'all'),
+                // Search container (full width)
+                Container(
+                  height: 56,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(color: chipColor, borderRadius: BorderRadius.circular(14)),
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 6),
+                      Icon(Icons.search, color: textSecondary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            hintText: "Search for 'water bottle', 'ID card'...",
+                            hintStyle: TextStyle(color: textSecondary),
+                          ),
+                          style: TextStyle(color: textPrimary),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                  ),
                 ),
 
-                _FilterChip.withIcon(
-                  label: 'Lost',
-                  icon: Icons.report,
-                  chipColor: chipColor,
-                  textPrimary: textPrimary,
-                  selected: _statusFilter == 'lost',
-                  onTap: () => setState(() => _statusFilter = 'lost'),
-                  onClear: _statusFilter == 'lost' ? () => setState(() => _statusFilter = 'all') : null,
-                ),
+                const SizedBox(height: 12),
 
-                _FilterChip.withIcon(
-                  label: 'Found',
-                  icon: Icons.check_circle,
-                  chipColor: chipColor,
-                  textPrimary: textPrimary,
-                  selected: _statusFilter == 'found',
-                  onTap: () => setState(() => _statusFilter = 'found'),
-                  onClear: _statusFilter == 'found' ? () => setState(() => _statusFilter = 'all') : null,
-                ),
+                // CHIPS ROW: left = scrollable chips, right = pinned Clear button (if active)
+                Row(
+                  children: [
+                    // Left: horizontally scrollable chips area
+                    Expanded(
+                      child: SizedBox(
+                        height: 48,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.only(left: 4),
+                          child: Row(
+                            children: [
+                              _FilterChip.withIcon(
+                                label: 'All',
+                                icon: Icons.filter_none,
+                                chipColor: chipColor,
+                                textPrimary: textPrimary,
+                                selected: _statusFilter == 'all',
+                                onTap: () => setState(() => _statusFilter = 'all'),
+                              ),
 
-                // Inline Clear chip (appears when any filter is active)
-                if (_statusFilter != 'all' || _selectedDate != null || _selectedLocationFilter != null)
-                  _FilterChip.withIcon(
-                    label: 'Clear',
-                    icon: Icons.clear,
-                    chipColor: chipColor,
-                    textPrimary: textPrimary,
-                    selected: false,
-                    onTap: () {
-                      // capture previous state for undo
-                      final prevStatus = _statusFilter;
-                      final prevDate = _selectedDate;
-                      final prevLoc = _selectedLocationFilter;
-                      final prevSortMode = _sortMode;
-                      final prevSortAsc = _sortAscending;
+                              _FilterChip.withIcon(
+                                label: 'Lost',
+                                icon: Icons.report,
+                                chipColor: chipColor,
+                                textPrimary: textPrimary,
+                                selected: _statusFilter == 'lost',
+                                onTap: () => setState(() => _statusFilter = 'lost'),
+                                onClear: _statusFilter == 'lost' ? () => setState(() => _statusFilter = 'all') : null,
+                              ),
 
-                      setState(() {
-                        _statusFilter = 'all';
-                        _selectedDate = null;
-                        _selectedLocationFilter = null;
-                        _sortMode = 'date';
-                        _sortAscending = false;
-                      });
+                              _FilterChip.withIcon(
+                                label: 'Found',
+                                icon: Icons.check_circle,
+                                chipColor: chipColor,
+                                textPrimary: textPrimary,
+                                selected: _statusFilter == 'found',
+                                onTap: () => setState(() => _statusFilter = 'found'),
+                                onClear: _statusFilter == 'found' ? () => setState(() => _statusFilter = 'all') : null,
+                              ),
 
-                      ScaffoldMessenger.of(context).clearSnackBars();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text('Filters cleared'),
-                          action: SnackBarAction(
-                            label: 'Undo',
-                            onPressed: () {
-                              setState(() {
-                                _statusFilter = prevStatus;
-                                _selectedDate = prevDate;
-                                _selectedLocationFilter = prevLoc;
-                                _sortMode = prevSortMode;
-                                _sortAscending = prevSortAsc;
-                              });
-                            },
+                              const SizedBox(width: 4),
+
+                              // Location filter - show check when active
+                              _FilterChip.withIcon(
+                                label: _selectedLocationFilter == null ? 'Location' : '✓ ${_selectedLocationFilter!}',
+                                icon: _selectedLocationFilter == null ? Icons.place : Icons.check_circle,
+                                chipColor: chipColor,
+                                textPrimary: textPrimary,
+                                selected: _selectedLocationFilter != null,
+                                onTap: () => _pickLocationFilter(context),
+                                onClear: _selectedLocationFilter != null
+                                    ? () {
+                                        setState(() {
+                                          _selectedLocationFilter = null;
+                                        });
+                                      }
+                                    : null,
+                              ),
+
+                              const SizedBox(width: 4),
+
+                              // Date picker chip
+                              _FilterChip.withIcon(
+                                label: _selectedDate == null ? 'Date' : '✓ ${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+                                icon: _selectedDate == null ? Icons.schedule : Icons.calendar_today,
+                                chipColor: chipColor,
+                                textPrimary: textPrimary,
+                                selected: _selectedDate != null,
+                                onTap: () => _pickDate(context),
+                                onClear: _selectedDate != null
+                                    ? () {
+                                        setState(() {
+                                          _selectedDate = null;
+                                        });
+                                      }
+                                    : null,
+                              ),
+
+                              const SizedBox(width: 4),
+
+                              // Sort-by-location toggle
+                              _FilterChip.withIcon(
+                                label: _sortMode == 'location' ? (_sortAscending ? 'Loc A→Z' : 'Loc Z→A') : 'Sort: Location',
+                                icon: _sortMode == 'location' ? (_sortAscending ? Icons.arrow_upward : Icons.arrow_downward) : Icons.sort_by_alpha,
+                                chipColor: chipColor,
+                                textPrimary: textPrimary,
+                                selected: _sortMode == 'location',
+                                onTap: () => _toggleSortMode('location'),
+                                onClear: _sortMode == 'location'
+                                    ? () => setState(() {
+                                          _sortMode = 'date';
+                                          _sortAscending = false;
+                                        })
+                                    : null,
+                              ),
+
+                              const SizedBox(width: 4),
+
+                              // Sort-by-date toggle
+                              _FilterChip.withIcon(
+                                label: _sortMode == 'date' ? (_sortAscending ? 'Date Old→New' : 'Date New→Old') : 'Sort: Date',
+                                icon: _sortMode == 'date' ? (_sortAscending ? Icons.arrow_upward : Icons.arrow_downward) : Icons.schedule,
+                                chipColor: chipColor,
+                                textPrimary: textPrimary,
+                                selected: _sortMode == 'date',
+                                onTap: () => _toggleSortMode('date'),
+                                onClear: _sortMode == 'date'
+                                    ? () => setState(() {
+                                          _sortMode = 'location';
+                                          _sortAscending = true;
+                                        })
+                                    : null,
+                              ),
+
+                              const SizedBox(width: 8),
+                            ],
                           ),
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    ),
 
-                // Location filter (opens modal list to choose a location to filter)
-                _FilterChip.withIcon(
-                  label: _selectedLocationFilter == null ? 'Location' : 'Loc: ${_selectedLocationFilter!}',
-                  icon: _selectedLocationFilter == null ? Icons.place : Icons.location_on,
-                  chipColor: chipColor,
-                  textPrimary: textPrimary,
-                  selected: _selectedLocationFilter != null,
-                  onTap: () => _pickLocationFilter(context),
-                  onClear: _selectedLocationFilter != null
-                      ? () {
-                          setState(() {
-                            _selectedLocationFilter = null;
-                          });
-                        }
-                      : null,
-                ),
+                    // Right: pinned Clear button (visible when any filter active)
+                    if (anyFilterActive) ...[
+                      const SizedBox(width: 12),
+                      _PinnedClearButton(
+                        onClear: () {
+                          final prevStatus = _statusFilter;
+                          final prevDate = _selectedDate;
+                          final prevLoc = _selectedLocationFilter;
+                          final prevSortMode = _sortMode;
+                          final prevSortAsc = _sortAscending;
 
-                // Date picker chip (pick single date)
-                _FilterChip.withIcon(
-                  label: _selectedDate == null ? 'Date' : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
-                  icon: _selectedDate == null ? Icons.schedule : Icons.calendar_today,
-                  chipColor: chipColor,
-                  textPrimary: textPrimary,
-                  selected: _selectedDate != null,
-                  onTap: () => _pickDate(context),
-                  onClear: _selectedDate != null
-                      ? () {
                           setState(() {
+                            _statusFilter = 'all';
                             _selectedDate = null;
-                          });
-                        }
-                      : null,
-                ),
-
-                // Sort-by-location toggle (tap to switch to location sorting, tap again to toggle direction)
-                _FilterChip.withIcon(
-                  label: _sortMode == 'location' ? (_sortAscending ? 'Loc A→Z' : 'Loc Z→A') : 'Sort: Location',
-                  icon: _sortMode == 'location' ? (_sortAscending ? Icons.arrow_upward : Icons.arrow_downward) : Icons.sort_by_alpha,
-                  chipColor: chipColor,
-                  textPrimary: textPrimary,
-                  selected: _sortMode == 'location',
-                  onTap: () => _toggleSortMode('location'),
-                  onClear: _sortMode == 'location'
-                      ? () => setState(() {
+                            _selectedLocationFilter = null;
                             _sortMode = 'date';
                             _sortAscending = false;
-                          })
-                      : null,
-                ),
+                          });
 
-                // Sort-by-date toggle
-                _FilterChip.withIcon(
-                  label: _sortMode == 'date' ? (_sortAscending ? 'Date Old→New' : 'Date New→Old') : 'Sort: Date',
-                  icon: _sortMode == 'date' ? (_sortAscending ? Icons.arrow_upward : Icons.arrow_downward) : Icons.schedule,
-                  chipColor: chipColor,
-                  textPrimary: textPrimary,
-                  selected: _sortMode == 'date',
-                  onTap: () => _toggleSortMode('date'),
-                  onClear: _sortMode == 'date'
-                      ? () => setState(() {
-                            _sortMode = 'location';
-                            _sortAscending = true;
-                          })
-                      : null,
+                          ScaffoldMessenger.of(context).clearSnackBars();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text('Filters cleared'),
+                              action: SnackBarAction(
+                                label: 'Undo',
+                                onPressed: () {
+                                  setState(() {
+                                    _statusFilter = prevStatus;
+                                    _selectedDate = prevDate;
+                                    _selectedLocationFilter = prevLoc;
+                                    _sortMode = prevSortMode;
+                                    _sortAscending = prevSortAsc;
+                                  });
+                                },
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ] else
+                      const SizedBox(width: 12),
+                  ],
                 ),
               ],
             ),
           ),
-
-          const SizedBox(height: 12),
-
-          // Cards (generated from filtered & sorted items)
-          ..._filteredAndSortedItems.map((item) {
-            return _ItemCard(
-              title: item['title'],
-              statusText: item['status'],
-              statusColorBg: item['statusColorBg'],
-              statusColorText: item['statusColorText'],
-              imageUrl: item['imageUrl'],
-              location: item['location'],
-              time: item['time'],
-              buttonText: item['buttonText'],
-              cardColor: cardColor,
-              primary: kPrimary,
-              textPrimary: textPrimary,
-              textSecondary: textSecondary,
-              onChatPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ChatPage()));
-              },
-            );
-          }).toList(),
         ],
+      ),
+    );
+  }
+}
+
+/// Pinned clear button (right side)
+class _PinnedClearButton extends StatelessWidget {
+  final VoidCallback onClear;
+  const _PinnedClearButton({required this.onClear, super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: kPrimary,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onClear,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Row(
+            children: const [
+              Icon(Icons.clear, color: Colors.white, size: 18),
+              SizedBox(width: 8),
+              Text('Clear', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -546,6 +603,7 @@ class _FilterChip extends StatelessWidget {
     this.icon,
     this.onTap,
     this.onClear,
+    super.key,
   });
 
   const _FilterChip.withIcon({
@@ -556,15 +614,27 @@ class _FilterChip extends StatelessWidget {
     required bool this.selected,
     this.onTap,
     this.onClear,
+    super.key,
   }) : primary = Colors.transparent;
 
   @override
   Widget build(BuildContext context) {
-    final bg = selected ? primary : chipColor;
+    // When selected: use bold primary color with shadow; inactive: light grey
+    final bg = selected ? kPrimary : chipColor;
     final textColor = selected ? Colors.white : textPrimary;
+    final fontWeight = selected ? FontWeight.bold : FontWeight.w500;
+    final fontSize = selected ? 14.0 : 13.0;
 
     return Container(
       margin: const EdgeInsets.only(right: 8),
+      decoration: selected
+          ? BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(color: kPrimary.withOpacity(0.25), blurRadius: 6, offset: const Offset(0, 3)),
+              ],
+            )
+          : null,
       child: Material(
         color: bg,
         borderRadius: BorderRadius.circular(10),
@@ -576,19 +646,13 @@ class _FilterChip extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                Text(label, style: TextStyle(color: textColor, fontSize: fontSize, fontWeight: fontWeight)),
                 if (icon != null) ...[
                   const SizedBox(width: 6),
                   Icon(icon, color: textColor, size: 16),
                 ],
-                // SMALL X ICON WHEN APPLICABLE (Option A appearance)
+
+                // SMALL X ICON WHEN APPLICABLE - more prominent when selected
                 if (onClear != null) ...[
                   const SizedBox(width: 8),
                   GestureDetector(
@@ -596,6 +660,9 @@ class _FilterChip extends StatelessWidget {
                     behavior: HitTestBehavior.opaque,
                     child: Container(
                       padding: const EdgeInsets.all(2),
+                      decoration: selected
+                          ? BoxDecoration(color: Colors.white.withOpacity(0.18), borderRadius: BorderRadius.circular(4))
+                          : null,
                       child: Icon(Icons.close, size: 14, color: textColor),
                     ),
                   ),
@@ -673,10 +740,7 @@ class _ItemCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Expanded(
-                        child: Text(title,
-                            style: TextStyle(color: textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
-                      ),
+                      Expanded(child: Text(title, style: TextStyle(color: textPrimary, fontSize: 18, fontWeight: FontWeight.bold))),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(color: statusColorBg, borderRadius: BorderRadius.circular(6)),
