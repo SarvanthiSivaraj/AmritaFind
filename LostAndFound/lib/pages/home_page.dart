@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'post_item_form_page.dart';
 import 'chat_page.dart';
 import 'profile_page.dart';
+import 'chat_bot_page.dart';
 
 /// COLORS SHARED
 const Color kPrimary = Color(0xFF8C2F39);
@@ -51,6 +52,19 @@ class HomePageFeed extends StatelessWidget {
           ],
         ),
         actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Center(
+              child: IconButton(
+                icon: Icon(Icons.chat_bubble, color: kPrimary, size: 28),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ChatbotScreen()),
+                  );
+                },
+              ),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: Center(
