@@ -73,15 +73,35 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
-  // sample user data (would normally come from API / local storage)
-  String _fullName = 'Priya Sharma';
-  String _subtitle = 'Student - CSE 2025';
-  String _contact = '+1 234 567 890';
-  String avatarUrl =
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuAMxisfuLYqWlfzdXkLn2g9unw9mSIugRMhtVx2mu19aqfMBsehgsqtawXOhviaM0rt7IlY7IUqG42ntfLRs5vbUKTkSa9BJ-Wk_rlWjyHunrULSqIZ36u0kaCWw6bgl7KcnHVrMr004XjHMIekcaMt1SdW6sXMBiawB0T1dc55dCKXtCP9mpzoyvJlSGzb5x9UArZayvExyoIqeIxU0FpNm9Ial88_QviYQb56rzNnLTk7PA3NWJlgVvLhh_DkPuz8aHhFxHd4Ol_6';
+class User {
+  final String name;
+  final String department;
+  final String year;
+  final String rollNumber;
+  final String avatarUrl;
 
-  // For better scroll behavior on small screens
+  User({
+    required this.name,
+    required this.department,
+    required this.year,
+    required this.rollNumber,
+    required this.avatarUrl,
+  });
+
+  String get formattedRoll => '$department.$year$rollNumber';
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  // Mock user data
+  User user = User(
+    name: 'Priya Sharma',
+    department: 'CSE',
+    year: '4',
+    rollNumber: 'CB.SC.U4CSE9999',
+    avatarUrl:
+        'https://lh3.googleusercontent.com/aida-public/AB6AXuAMxisfuLYqWlfzdXkLn2g9unw9mSIugRMhtVx2mu19aqfMBsehgsqtawXOhviaM0rt7IlY7IUqG42ntfLRs5vbUKTkSa9BJ-Wk_rlWjyHunrULSqIZ36u0kaCWw6bgl7KcnHVrMr004XjHMIekcaMt1SdW6sXMBiawB0T1dc55dCKXtCP9mpzoyvJlSGzb5x9UArZayvExyoIqeIxU0FpNm9Ial88_QviYQb56rzNnLTk7PA3NWJlgVvLhh_DkPuz8aHhFxHd4Ol_6',
+  );
+
   final _scrollController = ScrollController();
 
   @override
@@ -96,9 +116,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => EditProfileScreen(
-          initialName: _fullName,
-          initialContact: _contact,
-          avatarUrl: avatarUrl,
+          initialName: user.name,
+          initialContact: user.rollNumber,
+          avatarUrl: user.avatarUrl,
         ),
       ),
     );
@@ -106,11 +126,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // If the edit screen returned data, update UI
     if (result != null) {
       setState(() {
-        _fullName = result['name'] ?? _fullName;
-        _contact = result['contact'] ?? _contact;
+        user = User(
+          name: result['name'] ?? user.name,
+          department: user.department,
+          year: user.year,
+          rollNumber: result['contact'] ?? user.rollNumber,
+          avatarUrl: user.avatarUrl,
+        );
       });
 
-      // optional: show a snack confirming saved changes
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Profile updated')));
@@ -153,14 +177,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       image: DecorationImage(
-                        image: NetworkImage(avatarUrl),
+                        image: NetworkImage(user.avatarUrl),
                         fit: BoxFit.cover,
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    _fullName,
+                    user.name,
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -168,7 +192,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    _subtitle,
+                    'Department: ${user.department}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Color(0xFF757575),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Year: ${user.year}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Color(0xFF757575),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Roll Number: ${user.rollNumber}',
                     style: const TextStyle(
                       fontSize: 16,
                       color: Color(0xFF757575),
@@ -188,10 +228,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      child: Text(
+                      child: const Text(
                         'Edit Profile',
                         style: TextStyle(
-                          color: const Color(0xFF8C2F39),
+                          color: Color(0xFF8C2F39),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -209,10 +249,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
               ),
               child: Row(
-                children: [
-                  Expanded(child: _buildTab('My Posts', true)),
-                  Expanded(child: _buildTab('Activity', false)),
-                ],
+                children: [Expanded(child: _buildTab('My Posts', true))],
               ),
             ),
 
