@@ -1,26 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() => runApp(const ChatbotApp());
-
-class ChatbotApp extends StatelessWidget {
-  const ChatbotApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Chatbot Support',
-      theme: ThemeData(
-        fontFamily: 'Plus Jakarta Sans',
-        primaryColor: const Color(0xFF8C2F39),
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF8C2F39)),
-        useMaterial3: true,
-      ),
-      home: const ChatbotScreen(),
-      debugShowCheckedModeBanner: false,
-    );
-  }
-}
+import 'package:lostandfound/services/ai_service.dart';
 
 class ChatbotScreen extends StatefulWidget {
   const ChatbotScreen({super.key});
@@ -34,40 +16,25 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     ChatMessage(
       isUser: false,
       text:
-          "Hi! I'm here to help you find lost items. What are you looking for?",
-      time: DateTime.now().subtract(const Duration(minutes: 5)),
-    ),
-    ChatMessage(
-      isUser: true,
-      text: "Was a black wallet found?",
-      time: DateTime.now().subtract(const Duration(minutes: 4)),
-    ),
-    ChatMessage(
-      isUser: false,
-      text: "Let me check...",
-      time: DateTime.now().subtract(const Duration(minutes: 3)),
-      isTyping: true,
-    ),
-    ChatMessage(
-      isUser: false,
-      text:
-          "I found one item matching \"black wallet\". It was reported near the main library. Would you like to see the details?",
-      time: DateTime.now().subtract(const Duration(minutes: 2)),
-    ),
-    ChatMessage(
-      isUser: true,
-      text: "Yes, please.",
-      time: DateTime.now().subtract(const Duration(minutes: 1)),
+          "Hi! I'm the AmritaFind assistant. How can I help you with lost and found items today?",
+      time: DateTime.now(),
     ),
   ];
 
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  bool _isTyping = false;
+  // AI Service for the backend, initialized in initState.
+  late final AiService _aiService;
 
   @override
   void initState() {
     super.initState();
+    // Initialize the AiService to call Google Gemini directly.
+    // The API key is loaded from the .env file.
+    _aiService = AiService(
+      apiKey: dotenv.env['GEMINI_API_KEY'] ?? '',
+      model: 'gemini-2.5-flash',
+    );
     _scrollToBottom();
   }
 
@@ -83,19 +50,19 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     });
   }
 
-  void _sendMessage() {
+  void _sendMessage() async {
     if (_controller.text.trim().isEmpty) return;
 
+    final userMessageText = _controller.text.trim();
     final message = ChatMessage(
       isUser: true,
-      text: _controller.text.trim(),
+      text: userMessageText,
       time: DateTime.now(),
     );
 
     setState(() {
-      _messages.removeWhere((m) => m.isTyping);
+      // Add user message and a temporary typing indicator
       _messages.add(message);
-      _isTyping = true;
       _messages.add(
         ChatMessage(
           isUser: false,
@@ -109,24 +76,68 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     _controller.clear();
     _scrollToBottom();
 
-    // Simulate bot response
-    Timer(const Duration(seconds: 2), () {
+    // Get bot response from our backend proxy
+    try {
+      // Add a check for the API key before making the call
+      if (_aiService.apiKey.isEmpty) {
+        throw Exception(
+          'API Key is missing. Is GEMINI_API_KEY set in your .env file?',
+        );
+      }
+
+      final botResponse = await _aiService.sendMessage(userMessageText);
       if (mounted) {
         setState(() {
+          // Remove typing indicator and add bot's response
+          _messages.removeWhere((m) => m.isTyping);
+          _messages.add(
+            ChatMessage(isUser: false, text: botResponse, time: DateTime.now()),
+          );
+        });
+      }
+    } catch (e, s) {
+      // Log the full error and stack trace to the debug console for more details.
+      print('--- ERROR SENDING MESSAGE ---');
+      print('Exception: $e');
+      print('Stack Trace: $s');
+      print('-----------------------------');
+
+      if (mounted) {
+        // Display the specific error message in the chat UI for better debugging.
+        String displayError = e.toString();
+        // Clean up the exception text for better readability in the UI.
+        if (displayError.startsWith('Exception: ')) {
+          displayError = displayError.substring('Exception: '.length);
+        }
+        // Provide a more helpful message for Gemini API errors.
+        if (displayError.contains('Status: 400')) {
+          displayError =
+              'Bad request (400). Please check your GEMINI_API_KEY. It might be invalid or missing billing information on your Google Cloud account.';
+        } else if (displayError.contains('Status: 404')) {
+          displayError =
+              'Model not found (404). Ensure the model name is correct and the "Generative Language API" is enabled in your Google Cloud project.';
+        } else if (displayError.contains('Status: 429')) {
+          displayError =
+              'Too many requests (429). You have exceeded your API quota. Please wait and try again later, or check your Google Cloud billing status.';
+        }
+
+        setState(() {
+          // Remove typing indicator and show an error message
           _messages.removeWhere((m) => m.isTyping);
           _messages.add(
             ChatMessage(
               isUser: false,
-              text:
-                  "Thanks for your message! Let me check our lost and found database.",
+              text: 'Error: $displayError',
               time: DateTime.now(),
             ),
           );
-          _isTyping = false;
         });
+      }
+    } finally {
+      if (mounted) {
         _scrollToBottom();
       }
-    });
+    }
   }
 
   @override
