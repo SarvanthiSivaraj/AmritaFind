@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:async/async.dart';
 
 const Color kPrimary = Color(0xFF8C2F39);
 const Color kBackgroundLight = Color(0xFFFAF9F6);
-
-// Default avatar for everyone
-const String defaultAvatar =
-    "https://i.postimg.cc/3R1V1V1t/default-avatar.png";
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -28,6 +25,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _loadUser() async {
     final user = FirebaseAuth.instance.currentUser;
+
     if (user == null) {
       setState(() {
         _loading = false;
@@ -42,37 +40,34 @@ class _ProfilePageState extends State<ProfilePage> {
         .get();
 
     if (!doc.exists) {
-      // Default profile creation
-      final map = {
+      final profile = {
         "name": user.email?.split("@")[0] ?? "Student",
         "department": "CSE",
         "year": "1",
         "rollNumber": "00000",
         "contact": "",
-        "avatarUrl": defaultAvatar,
       };
 
       await FirebaseFirestore.instance
           .collection("users")
           .doc(user.uid)
-          .set(map);
+          .set(profile);
 
       setState(() {
-        _data = map;
+        _data = profile;
         _loading = false;
       });
+
       return;
     }
 
     setState(() {
-      _data = doc.data()!;
+      _data = doc.data();
       _loading = false;
     });
   }
 
   Future<void> _openEdit() async {
-    if (_data == null) return;
-
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -82,24 +77,97 @@ class _ProfilePageState extends State<ProfilePage> {
           year: _data!["year"],
           roll: _data!["rollNumber"],
           contact: _data!["contact"],
-          avatar: _data!["avatarUrl"] ?? defaultAvatar,
         ),
       ),
     );
 
-    if (result != null) {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        await FirebaseFirestore.instance
-            .collection("users")
-            .doc(user.uid)
-            .update(result);
+    if (result == null) return;
 
-        setState(() {
-          _data!.addAll(result);
-        });
-      }
-    }
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(user.uid)
+        .update(result);
+
+    setState(() {
+      _data!.addAll(result);
+    });
+  }
+
+  /// -------------------------------
+  /// LOAD USER POSTS (Lost + Found)
+  /// -------------------------------
+  Widget _buildMyPosts() {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+
+    final lostStream = FirebaseFirestore.instance
+        .collection("lost_items")
+        .where("userId", isEqualTo: uid)
+        .snapshots();
+
+    final foundStream = FirebaseFirestore.instance
+        .collection("found_items")
+        .where("userId", isEqualTo: uid)
+        .snapshots();
+
+    return StreamBuilder<List<QuerySnapshot>>(
+      stream: StreamZip([lostStream, foundStream]),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Padding(
+            padding: EdgeInsets.all(20),
+            child: CircularProgressIndicator(color: kPrimary),
+          );
+        }
+
+        final lostDocs = snapshot.data![0].docs;
+        final foundDocs = snapshot.data![1].docs;
+
+        final allPosts = [...lostDocs, ...foundDocs];
+
+        if (allPosts.isEmpty) {
+          return const Text(
+            "No posts yet.",
+            style: TextStyle(fontSize: 16),
+          );
+        }
+
+        return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: allPosts.length,
+          itemBuilder: (context, i) {
+            final doc = allPosts[i];
+            final data = doc.data() as Map<String, dynamic>;
+
+            final bool isLost = lostDocs.contains(doc);
+
+            return Card(
+              margin: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+              child: ListTile(
+                title: Text(data["item_name"] ?? "Item"),
+                subtitle: Text(isLost ? "Lost Item" : "Found Item"),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () async {
+                    await FirebaseFirestore.instance
+                        .collection(isLost ? "lost_items" : "found_items")
+                        .doc(doc.id)
+                        .delete();
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Post deleted")),
+                    );
+                  },
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -112,9 +180,15 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     if (_data == null) {
-      return const Scaffold(
-        body: Center(
-          child: Text("User not logged in"),
+      return Scaffold(
+        appBar: AppBar(
+          backgroundColor: kPrimary,
+          leading: BackButton(color: Colors.white),
+          title:
+              const Text("My Profile", style: TextStyle(color: Colors.white)),
+        ),
+        body: const Center(
+          child: Text("Please log in"),
         ),
       );
     }
@@ -122,9 +196,10 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       backgroundColor: kBackgroundLight,
       appBar: AppBar(
+        backgroundColor: kPrimary,
+        leading: BackButton(color: Colors.white),
         title: const Text("My Profile",
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: kPrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.edit, color: Colors.white),
@@ -132,34 +207,48 @@ class _ProfilePageState extends State<ProfilePage> {
           )
         ],
       ),
-      body: Center(
+
+      /// BODY
+      body: SingleChildScrollView(
         child: Column(
           children: [
-            const SizedBox(height: 30),
+            const SizedBox(height: 25),
 
-            /// Avatar
-            CircleAvatar(
-              radius: 70,
-              backgroundImage: NetworkImage(_data!["avatarUrl"] ?? defaultAvatar),
+            /// 🔹 BLANK AVATAR CIRCLE
+            Container(
+              width: 140,
+              height: 140,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.pink.shade100,
+              ),
             ),
 
             const SizedBox(height: 20),
 
-            /// Name
             Text(
               _data!["name"],
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 10),
 
-            Text("Department: ${_data!["department"]}",
-                style: const TextStyle(fontSize: 16)),
-            Text("Year: ${_data!["year"]}",
-                style: const TextStyle(fontSize: 16)),
-            Text("Roll Number: ${_data!["rollNumber"]}",
-                style: const TextStyle(fontSize: 16)),
-            Text("Contact: ${_data!["contact"]}",
-                style: const TextStyle(fontSize: 16)),
+            const SizedBox(height: 10),
+            Text("Department: ${_data!["department"]}"),
+            Text("Year: ${_data!["year"]}"),
+            Text("Roll Number: ${_data!["rollNumber"]}"),
+            Text("Contact: ${_data!["contact"]}"),
+
+            const SizedBox(height: 20),
+            Divider(color: Colors.grey.shade400),
+
+            const SizedBox(height: 10),
+            const Text(
+              "My Posts",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 10),
+            _buildMyPosts(),
+            const SizedBox(height: 40),
           ],
         ),
       ),
@@ -167,17 +256,12 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 }
 
-///////////////////////////////////////////////////////
-/// EDIT PROFILE SCREEN
-///////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+///                EDIT PROFILE (NO AVATAR)
+///////////////////////////////////////////////////////////////////////
 
 class EditProfileScreen extends StatefulWidget {
-  final String name;
-  final String department;
-  final String year;
-  final String roll;
-  final String contact;
-  final String avatar;
+  final String name, department, year, roll, contact;
 
   const EditProfileScreen({
     super.key,
@@ -186,7 +270,6 @@ class EditProfileScreen extends StatefulWidget {
     required this.year,
     required this.roll,
     required this.contact,
-    required this.avatar,
   });
 
   @override
@@ -194,11 +277,7 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
-  late TextEditingController _name;
-  late TextEditingController _dept;
-  late TextEditingController _year;
-  late TextEditingController _roll;
-  late TextEditingController _contact;
+  late TextEditingController _name, _dept, _year, _roll, _contact;
 
   @override
   void initState() {
@@ -208,16 +287,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _year = TextEditingController(text: widget.year);
     _roll = TextEditingController(text: widget.roll);
     _contact = TextEditingController(text: widget.contact);
-  }
-
-  @override
-  void dispose() {
-    _name.dispose();
-    _dept.dispose();
-    _year.dispose();
-    _roll.dispose();
-    _contact.dispose();
-    super.dispose();
   }
 
   void _save() {
@@ -235,9 +304,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Scaffold(
       backgroundColor: kBackgroundLight,
       appBar: AppBar(
-        title: const Text("Edit Profile",
-            style: TextStyle(color: Colors.white)),
         backgroundColor: kPrimary,
+        leading: BackButton(color: Colors.white),
+        title:
+            const Text("Edit Profile", style: TextStyle(color: Colors.white)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -245,18 +315,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           children: [
             const SizedBox(height: 10),
 
-            CircleAvatar(
-              radius: 60,
-              backgroundImage: NetworkImage(widget.avatar),
+            /// 🔹 SAME BLANK AVATAR
+            Container(
+              width: 140,
+              height: 140,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.pink.shade100,
+              ),
             ),
 
             const SizedBox(height: 20),
 
-            _input("Full Name", _name),
-            _input("Department", _dept),
-            _input("Year", _year),
-            _input("Roll Number", _roll),
-            _input("Contact", _contact),
+            _field("Full Name", _name),
+            _field("Department", _dept),
+            _field("Year", _year),
+            _field("Roll Number", _roll),
+            _field("Contact", _contact),
 
             const SizedBox(height: 20),
 
@@ -266,8 +341,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: kPrimary),
                 onPressed: _save,
-                child: const Text("Save Changes",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  "Save Changes",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
           ],
@@ -276,20 +353,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  Widget _input(String label, TextEditingController controller) {
+  Widget _field(String label, TextEditingController controller) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.white,
-            border:
-                OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
         const SizedBox(height: 16),
