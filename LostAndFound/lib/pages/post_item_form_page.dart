@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'home_page.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'home_page.dart'; // for kBackgroundLight, kPrimary
 
 /// ================= POST ITEM FORM =================
 
@@ -29,9 +31,34 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
     super.dispose();
   }
 
+  // -----------------------------
+  // SAVE TO FIREBASE (FIXED)
+  // -----------------------------
+  Future<void> _saveToFirestore() async {
+    final collectionName = _status == "Lost" ? "lost_items" : "found_items";
+
+    final user = FirebaseAuth.instance.currentUser;
+
+    await FirebaseFirestore.instance.collection(collectionName).add({
+      "userId": user?.uid ?? "unknown",
+
+      // FIXED FIELD NAMES TO MATCH FIRESTORE
+      "item_name": _itemNameController.text.trim(),
+      "description": _descriptionController.text.trim(),
+      "location": _location ?? "",
+      "contact": _contactController.text.trim(),
+      "secret_question": _secretQuestionController.text.trim(),
+      "status": _status,
+
+      // IMAGE URL placeholder
+      "imageUrl": "",
+
+      "timestamp": FieldValue.serverTimestamp(),
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Light theme only
     final surfaceLight = const Color(0xFFFFFFFF);
     final textPrimaryLight = const Color(0xFF333333);
     final textSecondaryLight = const Color(0xFF888888);
@@ -87,7 +114,6 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
               ),
             ),
 
-            // Content + sticky button
             Expanded(
               child: Form(
                 key: _formKey,
@@ -96,12 +122,10 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Image upload
+
+                      // ---------- IMAGE UPLOAD (not functional yet) ----------
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 32,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
                         decoration: BoxDecoration(
                           color: surface,
                           borderRadius: BorderRadius.circular(16),
@@ -124,29 +148,18 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
                                 color: kPrimary.withOpacity(0.1),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(
-                                Icons.add_a_photo_outlined,
-                                size: 36,
-                                color: kPrimary,
-                              ),
+                              child: const Icon(Icons.add_a_photo_outlined, size: 36, color: kPrimary),
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'Upload a Photo',
-                              style: TextStyle(
-                                color: textPrimary,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: TextStyle(color: textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 4),
                             Text(
                               'Tap to open your camera or gallery',
-                              style: TextStyle(
-                                color: textSecondary,
-                                fontSize: 14,
-                              ),
+                              style: TextStyle(color: textSecondary, fontSize: 14),
                               textAlign: TextAlign.center,
                             ),
                           ],
@@ -155,7 +168,7 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
 
                       const SizedBox(height: 16),
 
-                      // Form card
+                      // ---------- FORM ----------
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
@@ -171,13 +184,10 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
                         ),
                         child: Column(
                           children: [
-                            // Segmented Lost / Found
+                            // Lost / Found Switch
                             Container(
                               height: 48,
-                              decoration: BoxDecoration(
-                                color: bg,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+                              decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
                               child: Row(
                                 children: [
                                   Expanded(
@@ -186,11 +196,7 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
                                       selected: _status == 'Lost',
                                       primary: kPrimary,
                                       textSecondary: textSecondary,
-                                      onTap: () {
-                                        setState(() {
-                                          _status = 'Lost';
-                                        });
-                                      },
+                                      onTap: () => setState(() => _status = 'Lost'),
                                     ),
                                   ),
                                   Expanded(
@@ -199,11 +205,7 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
                                       selected: _status == 'Found',
                                       primary: kPrimary,
                                       textSecondary: textSecondary,
-                                      onTap: () {
-                                        setState(() {
-                                          _status = 'Found';
-                                        });
-                                      },
+                                      onTap: () => setState(() => _status = 'Found'),
                                     ),
                                   ),
                                 ],
@@ -212,28 +214,21 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
 
                             const SizedBox(height: 16),
 
+                            // Item Name
                             _LabeledField(
                               label: 'Item Name',
                               textPrimary: textPrimary,
                               child: TextFormField(
                                 controller: _itemNameController,
                                 style: TextStyle(color: textPrimary),
-                                decoration: _inputDecoration(
-                                  'e.g., Black Water Bottle',
-                                  textSecondary,
-                                  borderColor,
-                                ),
-                                validator: (v) {
-                                  if (v == null || v.trim().isEmpty) {
-                                    return 'Please enter the item name';
-                                  }
-                                  return null;
-                                },
+                                decoration: _inputDecoration('e.g., Black Water Bottle', textSecondary, borderColor),
+                                validator: (v) => v == null || v.trim().isEmpty ? 'Please enter the item name' : null,
                               ),
                             ),
 
                             const SizedBox(height: 12),
 
+                            // Description
                             _LabeledField(
                               label: 'Description',
                               textPrimary: textPrimary,
@@ -242,7 +237,7 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
                                 maxLines: 4,
                                 style: TextStyle(color: textPrimary),
                                 decoration: _inputDecoration(
-                                  'Add details like brand, color, or any identifying marks...',
+                                  'Add details like brand, color, etc.',
                                   textSecondary,
                                   borderColor,
                                 ),
@@ -251,52 +246,22 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
 
                             const SizedBox(height: 12),
 
+                            // Location
                             _LabeledField(
                               label: 'Location',
                               textPrimary: textPrimary,
                               child: DropdownButtonFormField<String>(
                                 value: _location,
                                 items: const [
-                                  DropdownMenuItem(
-                                    value: '',
-                                    child: Text('Select a location'),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: 'AB1',
-                                    child: Text('AB1'),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: 'AB2',
-                                    child: Text('AB2'),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: 'AB3',
-                                    child: Text('AB3'),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: 'Hostel',
-                                    child: Text('Hostel'),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: 'Parking',
-                                    child: Text('Parking'),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: 'Other',
-                                    child: Text('Other'),
-                                  ),
+                                  DropdownMenuItem(value: 'AB1', child: Text('AB1')),
+                                  DropdownMenuItem(value: 'AB2', child: Text('AB2')),
+                                  DropdownMenuItem(value: 'AB3', child: Text('AB3')),
+                                  DropdownMenuItem(value: 'Hostel', child: Text('Hostel')),
+                                  DropdownMenuItem(value: 'Parking', child: Text('Parking')),
+                                  DropdownMenuItem(value: 'Other', child: Text('Other')),
                                 ],
-                                onChanged: (value) {
-                                  setState(() {
-                                    _location = value;
-                                  });
-                                },
-                                style: TextStyle(color: textPrimary),
-                                decoration: _inputDecoration(
-                                  'Select a location',
-                                  textSecondary,
-                                  borderColor,
-                                ),
+                                onChanged: (value) => setState(() => _location = value),
+                                decoration: _inputDecoration('Select a location', textSecondary, borderColor),
                               ),
                             ),
 
@@ -306,17 +271,8 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
                               children: [
                                 Expanded(child: Divider(color: borderColor)),
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                  ),
-                                  child: Text(
-                                    'OPTIONAL',
-                                    style: TextStyle(
-                                      color: textSecondary,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  child: Text('OPTIONAL', style: TextStyle(color: textSecondary, fontSize: 11)),
                                 ),
                                 Expanded(child: Divider(color: borderColor)),
                               ],
@@ -324,34 +280,26 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
 
                             const SizedBox(height: 16),
 
+                            // Contact
                             _LabeledField(
                               label: 'Contact Number',
                               textPrimary: textPrimary,
                               child: TextFormField(
                                 controller: _contactController,
                                 keyboardType: TextInputType.phone,
-                                style: TextStyle(color: textPrimary),
-                                decoration: _inputDecoration(
-                                  'Your phone number',
-                                  textSecondary,
-                                  borderColor,
-                                ),
+                                decoration: _inputDecoration('Your phone number', textSecondary, borderColor),
                               ),
                             ),
 
                             const SizedBox(height: 12),
 
+                            // Secret Question
                             _LabeledField(
                               label: 'Secret Question',
                               textPrimary: textPrimary,
                               child: TextFormField(
                                 controller: _secretQuestionController,
-                                style: TextStyle(color: textPrimary),
-                                decoration: _inputDecoration(
-                                  "e.g., What's the laptop's sticker?",
-                                  textSecondary,
-                                  borderColor,
-                                ),
+                                decoration: _inputDecoration("e.g., laptop sticker?", textSecondary, borderColor),
                               ),
                             ),
                           ],
@@ -365,7 +313,7 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
               ),
             ),
 
-            // Sticky submit
+            // ---------- SUBMIT BUTTON ----------
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -386,24 +334,24 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
                     backgroundColor: kPrimary,
                     foregroundColor: Colors.white,
                     elevation: 6,
-                    shadowColor: kPrimary.withOpacity(0.3),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
-                  onPressed: () {
-                    if (_formKey.currentState?.validate() ?? false) {
-                      Navigator.of(context).pop();
-                    }
+                  onPressed: () async {
+                    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+                    await _saveToFirestore();
+
+                    if (!mounted) return;
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Item posted successfully!")),
+                    );
+
+                    Navigator.of(context).pop();
                   },
                   child: const Text(
                     'Submit',
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.15,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -414,16 +362,10 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
     );
   }
 
-  InputDecoration _inputDecoration(
-    String hint,
-    Color hintColor,
-    Color borderColor,
-  ) {
+  InputDecoration _inputDecoration(String hint, Color hintColor, Color borderColor) {
     return InputDecoration(
       hintText: hint,
       hintStyle: TextStyle(color: hintColor),
-      filled: true,
-      fillColor: Colors.transparent,
       contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -466,19 +408,13 @@ class _SegmentButton extends StatelessWidget {
       child: Material(
         color: bg,
         borderRadius: BorderRadius.circular(10),
-        elevation: selected ? 2 : 0,
         child: InkWell(
           borderRadius: BorderRadius.circular(10),
           onTap: onTap,
           child: Center(
             child: Text(
               label,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: textColor,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(color: textColor, fontSize: 13, fontWeight: FontWeight.w500),
             ),
           ),
         ),
@@ -503,14 +439,7 @@ class _LabeledField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: textPrimary,
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        Text(label, style: TextStyle(color: textPrimary, fontSize: 15, fontWeight: FontWeight.w600)),
         const SizedBox(height: 6),
         child,
       ],

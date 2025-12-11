@@ -284,75 +284,81 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             ),
           ),
           // Input Area
-          Container(
+          // Input Area
+Container(
+  decoration: BoxDecoration(
+    color: const Color(0xFFF8F6F6),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withOpacity(0.05),
+        blurRadius: 8,
+        offset: const Offset(0, -2),
+      ),
+    ],
+  ),
+  padding: const EdgeInsets.all(16),
+  child: Row(
+    crossAxisAlignment: CrossAxisAlignment.end,
+    children: [
+      Expanded(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: 48,
+            maxHeight: 160, // ❗ TextField can grow up to 6–7 lines
+          ),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8F6F6),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, -2),
+                  blurRadius: 4,
                 ),
               ],
             ),
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 4,
-                        ),
-                      ],
-                    ),
-                    child: TextField(
-                      controller: _controller,
-                      decoration: InputDecoration(
-                        hintText: 'Ask about a lost item...',
-                        hintStyle: TextStyle(color: Colors.grey[500]),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                      ),
-                      onSubmitted: (_) => _sendMessage(),
-                      maxLines: null,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                GestureDetector(
-                  onTap: _sendMessage,
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF8C2F39),
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF8C2F39).withOpacity(0.3),
-                          blurRadius: 8,
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.send,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                ),
-              ],
+            child: TextField(
+              controller: _controller,
+              keyboardType: TextInputType.multiline,
+              textInputAction: TextInputAction.newline,
+              minLines: 1,
+              maxLines: 6, // ❗ Multiline enabled and visible
+              textAlignVertical: TextAlignVertical.top,
+              decoration: InputDecoration(
+                hintText: 'Ask about a lost item...',
+                hintStyle: TextStyle(color: Colors.grey[500]),
+                border: InputBorder.none,
+                isCollapsed: true,
+              ),
             ),
           ),
+        ),
+      ),
+
+      const SizedBox(width: 12),
+
+      GestureDetector(
+        onTap: _sendMessage,
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: const Color(0xFF8C2F39),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF8C2F39).withOpacity(0.3),
+                blurRadius: 8,
+              ),
+            ],
+          ),
+          child: const Icon(Icons.send, color: Colors.white),
+        ),
+      ),
+    ],
+  ),)
+
         ],
       ),
     );

@@ -1,8 +1,6 @@
-// home_page.dart
-// Filter chips overlay with pinned Clear button on the right.
-// Replace your existing home_page.dart with this file.
-
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'post_item_form_page.dart';
 import 'chat_page.dart';
 import 'profile_page.dart';
@@ -10,11 +8,8 @@ import 'chat_bot_page.dart';
 import 'login_page.dart' as login;
 import '../services/auth_service.dart';
 
-/// COLORS SHARED
 const Color kPrimary = Color(0xFF8C2F39);
-const Color kPrimaryChat = Color(0xFF8D303B);
 const Color kBackgroundLight = Color(0xFFFAF9F6);
-const Color kBackgroundDark = Color(0xFF1E1415);
 
 class HomePageFeed extends StatefulWidget {
   const HomePageFeed({super.key});
@@ -24,528 +19,416 @@ class HomePageFeed extends StatefulWidget {
 }
 
 class _HomePageFeedState extends State<HomePageFeed> {
-  // status filter: 'all' / 'lost' / 'found'
-  String _statusFilter = 'all';
+  String _statusFilter = "all";
+  String _searchText = "";
+  DateTime? _selectedDate;
+  String? _selectedLocation;
+  String _sortMode = "date"; 
+  bool _sortAscending = false; 
 
-  // sort mode: 'date' or 'location'
-  String _sortMode = 'date';
-  bool _sortAscending = false; // true = ascending (old->new for date, natural order for location)
-
-  // selected filters
-  DateTime? _selectedDate; // single-date filter chosen by user
-  String? _selectedLocationFilter; // single location selected (e.g., 'AB1')
-
-  // canonical location order used for sorting
-  final List<String> _locationOrderCanonical = [
-    'AB1',
-    'AB2',
-    'AB3',
-    'NB1',
-    'NB2',
-    'NB3',
-    'AUDITORIUM',
-    'LIB',
-    'CANTEEN',
-    'PARKING'
+  final List<String> _locations = [
+    "AB1","AB2","AB3","NB1","NB2","NB3","Auditorium","Lib","Canteen","Parking"
   ];
 
-  // available locations shown to user for filtering
-  final List<String> _availableLocations = ['AB1', 'AB2', 'AB3', 'NB1', 'NB2', 'NB3', 'Auditorium', 'Lib', 'Canteen', 'Parking'];
+  /// ------------------------------------------
+  /// 🔥 COMBINED LIVE STREAM (lost + found)
+  /// ------------------------------------------
+  Stream<List<Map<String, dynamic>>> _itemsStream() {
+    final lostStream = FirebaseFirestore.instance.collection("lost_items").snapshots();
+    final foundStream = FirebaseFirestore.instance.collection("found_items").snapshots();
 
-  // sample items (in real app replace with backend data)
-  late List<Map<String, dynamic>> _items = [
-    {
-      'id': 1,
-      'title': 'Blue Water Bottle',
-      'status': 'FOUND',
-      'statusColorBg': Colors.green.shade100,
-      'statusColorText': Colors.green.shade700,
-      'imageUrl':
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuCtbHje8XodJ39bsiJP6sMe2OeIbG6fmqzgVsRg4wEUEbBCPtUdhiSvBfXZhJ90t5TM-QRwL8gXByAzWBI2hQ6x8-1Zw4yXyAmuszB6qHJEk86dEP1i7aGkUEByY1VrNwa6ii-TTfsae8hM1cYteBVfPOZvRU6E5XsfwsZDH7zUYOlTpl1UTTtYR2BSKHK1MeWCHILoZN82kv54uCMNtZho7I36C2Cx8KhebJTq7s1_IksNaAf_QZ-Tx6T4Z_aso0w8P-5WbR5l5BhU',
-      'location': 'Found near AB1 entrance',
-      'time': 'Oct 26, 2:30 PM',
-      'date': DateTime(2024, 10, 26, 14, 30),
-      'buttonText': 'Chat with Finder',
-    },
-    {
-      'id': 2,
-      'title': 'Dell Laptop Charger',
-      'status': 'LOST',
-      'statusColorBg': Colors.red.shade100,
-      'statusColorText': Colors.red.shade700,
-      'imageUrl':
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuBGnfrW4cBlo8roobNYq-sMBBuokYQtremQ7vhgJq3sQFz0oTIOLAzMDVVhWBYl3YFjv6E312WZ5yUwNngMJ98dLImIkVnyRGZoPBqjttj8oa_1Gk79t6RqjUOYozet2p3v1ekVmPFEpTd1XL289YyUjIJOUudbFQ0oTuzwNar41JP2jZRwTH2xAS8KSaG4TokgfzvsNlzpi76JwSCgpUNeuNWWJrYBVY2rez6qnFGBNG97RxuHM6xDnM-uzc3f89YnDahLUBkv_at4',
-      'location': 'Lost in Central Library, 3rd floor',
-      'time': 'Oct 26, 11:00 AM',
-      'date': DateTime(2024, 10, 26, 11, 0),
-      'buttonText': 'Chat with Owner',
-    },
-    {
-      'id': 3,
-      'title': 'Student ID Card',
-      'status': 'FOUND',
-      'statusColorBg': Colors.green.shade100,
-      'statusColorText': Colors.green.shade700,
-      'imageUrl':
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuC0S-lgRPy0ijtWZ0y_9b5vmCRuvkqp3tIp0cgcuPMyEuJelS3XLpFp04jp5tY7oeGIaCV9EnKUFnFROziFrxUtXpWQ7rDlRz74BPU44RGjXEFeh5z4_exEuFUoevnZZ6I7MXgSDxOVfj-8HMAF3n3VaNEX1Ig_kf4aBT00e0lyMSSg4zfOeG1WNGyDHen3L_WslRUtlHPVrWx6Z5UN9NKTW55dabkTjPXrIP2VStSYxiFKvacxEl6u1nAmhSmeu-oIyy8JLkhZsgVP',
-      'location': 'Found in college main auditorium',
-      'time': 'Oct 25, 5:00 PM',
-      'date': DateTime(2024, 10, 25, 17, 0),
-      'buttonText': 'Chat with Finder',
-    },
-  ];
+    return lostStream.asyncMap((lost) async {
+      final found = await foundStream.first;
 
-  // -------------------------
-  // Helpers: extract & compare location keys
-  // -------------------------
-  // Normalize location names (e.g., 'Found near AB1 entrance' -> 'AB1', 'Central Library' -> 'LIB')
-  String _extractLocationKey(String fullLocation) {
-    final s = fullLocation.trim();
+      final lostList = lost.docs.map((d) {
+        return {
+          "id": d.id,
+          ...d.data(),
+          "source": "LOST",
+        };
+      }).toList();
 
-    // find tokens like AB1, AB-1, NB2 etc.
-    final reg = RegExp(r'([A-Za-z]{2})[-\s]?(\d+)', caseSensitive: false);
-    final m = reg.firstMatch(s);
-    if (m != null) {
-      final letters = m.group(1)!.toUpperCase();
-      final digits = m.group(2)!;
-      return '$letters$digits';
-    }
+      final foundList = found.docs.map((d) {
+        return {
+          "id": d.id,
+          ...d.data(),
+          "source": "FOUND",
+        };
+      }).toList();
 
-    final lower = s.toLowerCase();
-    if (lower.contains('parking')) return 'PARKING';
-    if (lower.contains('canteen')) return 'CANTEEN';
-    if (lower.contains('library') || lower.contains('lib')) return 'LIB';
-    if (lower.contains('auditorium')) return 'AUDITORIUM';
-    if (lower.contains('entrance')) return 'ENTRANCE';
-
-    // fallback: take first word uppercased
-    return s.split(' ').first.toUpperCase();
+      return [...lostList, ...foundList];
+    });
   }
 
-  // Compare two normalized location keys using canonical order; fallback alphabetical.
-  int _compareLocationKeys(String aRaw, String bRaw) {
-    final a = aRaw.toUpperCase();
-    final b = bRaw.toUpperCase();
-    final idxA = _locationOrderCanonical.indexOf(a);
-    final idxB = _locationOrderCanonical.indexOf(b);
+  /// ------------------------------------------
+  /// FILTER + SORT
+  /// ------------------------------------------
+  List<Map<String, dynamic>> _applyFilters(List<Map<String, dynamic>> items) {
+    List<Map<String, dynamic>> out = List.from(items);
 
-    if (idxA != -1 && idxB != -1) return idxA.compareTo(idxB);
-    if (idxA != -1) return -1; // known first
-    if (idxB != -1) return 1;
-    return a.compareTo(b); // fallback alphabetical
-  }
-
-  // -------------------------
-  // Compute visible items (filters + sort)
-  // -------------------------
-  List<Map<String, dynamic>> get _filteredAndSortedItems {
-    var items = List<Map<String, dynamic>>.from(_items);
-
-    // status filter
-    if (_statusFilter == 'lost') {
-      items = items.where((it) => it['status'] == 'LOST').toList();
-    } else if (_statusFilter == 'found') {
-      items = items.where((it) => it['status'] == 'FOUND').toList();
+    if (_statusFilter != "all") {
+      out = out.where((e) => e["source"].toString().toLowerCase() == _statusFilter).toList();
     }
 
-    // date filter (single date chosen by user) - compare calendar day
+    if (_selectedLocation != null) {
+      out = out.where((e) =>
+          e["location"]?.toString().toUpperCase() ==
+          _selectedLocation!.toUpperCase()).toList();
+    }
+
     if (_selectedDate != null) {
-      items = items.where((it) {
-        final d = it['date'] as DateTime;
-        return d.year == _selectedDate!.year && d.month == _selectedDate!.month && d.day == _selectedDate!.day;
+      out = out.where((e) {
+        final ts = e["timestamp"];
+        if (ts == null) return false;
+        final dt = (ts as Timestamp).toDate();
+        return dt.year == _selectedDate!.year &&
+               dt.month == _selectedDate!.month &&
+               dt.day == _selectedDate!.day;
       }).toList();
     }
 
-    // location filter (single selected location)
-    if (_selectedLocationFilter != null) {
-      items = items.where((it) {
-        final key = _extractLocationKey(it['location'] as String);
-        return key.toUpperCase() == _selectedLocationFilter!.toUpperCase();
+    if (_searchText.isNotEmpty) {
+      out = out.where((e) {
+        final title = (e["item_name"] ?? e["itemName"] ?? "")
+            .toString()
+            .toLowerCase();
+        return title.contains(_searchText.toLowerCase());
       }).toList();
     }
 
-    // Sorting
-    if (_sortMode == 'date') {
-      // _sortAscending true => oldest->newest ; false => newest->oldest
-      items.sort((a, b) {
-        final da = a['date'] as DateTime;
-        final db = b['date'] as DateTime;
+    out.sort((a, b) {
+      if (_sortMode == "date") {
+        final da = (a["timestamp"] as Timestamp?)?.toDate() ?? DateTime(2000);
+        final db = (b["timestamp"] as Timestamp?)?.toDate() ?? DateTime(2000);
         return _sortAscending ? da.compareTo(db) : db.compareTo(da);
-      });
-    } else if (_sortMode == 'location') {
-      items.sort((a, b) {
-        final la = _extractLocationKey(a['location'] as String);
-        final lb = _extractLocationKey(b['location'] as String);
-        final cmp = _compareLocationKeys(la, lb);
-        return _sortAscending ? cmp : -cmp;
-      });
-    }
-
-    return items;
-  }
-
-  // -------------------------
-  // UI actions: pick date & pick location
-  // -------------------------
-  Future<void> _pickDate(BuildContext context) async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate ?? now,
-      firstDate: DateTime(now.year - 2),
-      lastDate: DateTime(now.year + 1),
-      helpText: 'Filter by date',
-    );
-
-    if (picked != null) {
-      setState(() {
-        _selectedDate = picked;
-        // switch to date sort mode to make ordering obvious
-        _sortMode = 'date';
-      });
-    }
-  }
-
-  Future<void> _pickLocationFilter(BuildContext context) async {
-    final picked = await showDialog<String?>(context: context, builder: (ctx) {
-      return SimpleDialog(
-        title: const Text('Filter by location'),
-        children: [
-          SimpleDialogOption(
-            child: const Text('All locations'),
-            onPressed: () => Navigator.pop(ctx, null),
-          ),
-          ..._availableLocations.map((loc) {
-            return SimpleDialogOption(
-              child: Text(loc),
-              onPressed: () => Navigator.pop(ctx, loc),
-            );
-          }),
-        ],
-      );
-    });
-
-    // set selection (picked can be null to clear)
-    setState(() {
-      _selectedLocationFilter = picked;
-    });
-  }
-
-  // Toggle sort mode between date/location (and manage default ascend/descend)
-  void _toggleSortMode(String mode) {
-    setState(() {
-      if (_sortMode == mode) {
-        _sortAscending = !_sortAscending;
       } else {
-        _sortMode = mode;
-        // sensible defaults:
-        _sortAscending = mode == 'location' ? true : false; // location natural order, date newest-first
+        final la = a["location"] ?? "";
+        final lb = b["location"] ?? "";
+        return _sortAscending 
+            ? la.compareTo(lb)
+            : lb.compareTo(la);
       }
     });
+
+    return out;
   }
 
-  // Clear filters
+  /// ------------------------------------------
+  /// SELECT DATE
+  /// ------------------------------------------
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final d = await showDatePicker(
+      context: context,
+      firstDate: DateTime(now.year - 2),
+      lastDate: DateTime(now.year + 1),
+      initialDate: _selectedDate ?? now,
+    );
+
+    if (d != null) setState(() => _selectedDate = d);
+  }
+
+  /// CLEAR FILTERS
   void _clearFilters() {
     setState(() {
-      _statusFilter = 'all';
+      _statusFilter = "all";
       _selectedDate = null;
-      _selectedLocationFilter = null;
-      _sortMode = 'date';
+      _selectedLocation = null;
+      _sortMode = "date";
       _sortAscending = false;
     });
   }
 
+  /// ------------------------------------------
+  /// MAIN UI
+  /// ------------------------------------------
   @override
   Widget build(BuildContext context) {
-    final cardLight = const Color(0xFFFFFFFF);
-    final textPrimaryLight = const Color(0xFF333333);
-    final textSecondaryLight = const Color(0xFF757575);
-    final chipLight = const Color(0xFFF0EBEA);
-
-    final bgColor = kBackgroundLight;
-    final cardColor = cardLight;
-    final textPrimary = textPrimaryLight;
-    final textSecondary = textSecondaryLight;
-    final chipColor = chipLight;
-
-    // top overlay vertical offset (approx below AppBar)
-    final topOverlay = kToolbarHeight + 12.0;
-
-    // Whether any filter is active (useful for showing Clear)
-    final bool anyFilterActive = _statusFilter != 'all' || _selectedDate != null || _selectedLocationFilter != null;
-
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: kBackgroundLight,
       appBar: AppBar(
-        backgroundColor: bgColor.withOpacity(0.8),
+        backgroundColor: kBackgroundLight,
         elevation: 0,
-        titleSpacing: 0,
         title: Row(
-          children: [
-            const SizedBox(width: 8),
+          children: const [
             Icon(Icons.school, color: kPrimary, size: 28),
-            const SizedBox(width: 8),
-            Text('Lost & Found', style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
+            SizedBox(width: 8),
+            Text("Lost & Found",
+                style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
           ],
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.chat_bubble, color: kPrimary, size: 28),
-            onPressed: () {
-              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ChatbotScreen()));
-            },
+            icon: const Icon(Icons.chat_bubble, color: kPrimary),
+            onPressed: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const ChatbotScreen())),
           ),
           IconButton(
-            icon: Icon(Icons.person, color: kPrimary, size: 28),
-            onPressed: () {
-              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
-            },
+            icon: const Icon(Icons.person, color: kPrimary),
+            onPressed: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const ProfilePage())),
           ),
         ],
       ),
+
+      /// ADD BUTTON
       floatingActionButton: FloatingActionButton(
         backgroundColor: kPrimary,
+        child: const Icon(Icons.add),
         onPressed: () async {
-          if (AuthService.isLoggedIn) {
-            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PostItemFormPage()));
-            return;
+          if (!AuthService.isLoggedIn) {
+            final ok = await Navigator.push(
+                context, MaterialPageRoute(builder: (_) => const login.LoginScreen()));
+            if (ok != true) return;
           }
-          final result = await Navigator.of(context).push<bool?>(MaterialPageRoute(builder: (_) => const login.LoginScreen()));
-          if (result == true || AuthService.isLoggedIn) {
-            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PostItemFormPage()));
-          }
+          Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const PostItemFormPage()));
         },
-        child: const Icon(Icons.add, size: 28),
       ),
-      // Body uses a Stack so we can overlay the chips near the top (under the AppBar)
-      body: Stack(
+
+      body: Column(
         children: [
-          // Main scrollable list (leave top padding so content isn't hidden under overlay)
-          ListView(
-            padding: EdgeInsets.only(top: topOverlay + 72, bottom: 96), // top padding to leave room for search + chips overlay
-            children: [
-              // Cards from filtered & sorted items
-              ..._filteredAndSortedItems.map((item) {
-                return _ItemCard(
-                  title: item['title'],
-                  statusText: item['status'],
-                  statusColorBg: item['statusColorBg'],
-                  statusColorText: item['statusColorText'],
-                  imageUrl: item['imageUrl'],
-                  location: item['location'],
-                  time: item['time'],
-                  buttonText: item['buttonText'],
-                  cardColor: cardColor,
-                  primary: kPrimary,
-                  textPrimary: textPrimary,
-                  textSecondary: textSecondary,
-                  onChatPressed: () {
-                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ChatPage()));
-                  },
-                );
-              }).toList(),
-            ],
+
+          // SEARCH BAR
+          Container(
+            margin: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.search, color: Colors.grey),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    onChanged: (v) => setState(() => _searchText = v),
+                    decoration: const InputDecoration(
+                      hintText: "Search for 'water bottle', 'ID card'...",
+                      border: InputBorder.none,
+                    ),
+                  ),
+                )
+              ],
+            ),
           ),
 
-          // Positioned search bar + chips overlay near top
-          Positioned(
-            top: 8,
-            left: 12,
-            right: 12,
+          // FILTERS
+          _buildFilters(),
+
+          const SizedBox(height: 10),
+
+          /// STREAM LIST
+          Expanded(
+            child: StreamBuilder<List<Map<String, dynamic>>>(
+              stream: _itemsStream(),
+              builder: (_, snap) {
+                if (!snap.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final data = _applyFilters(snap.data!);
+
+                if (data.isEmpty) {
+                  return const Center(
+                      child: Text("No items found",
+                          style: TextStyle(fontSize: 16, color: Colors.grey)));
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.only(bottom: 80),
+                  itemCount: data.length,
+                  itemBuilder: (_, i) => _itemCard(data[i]),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// ------------------------------------------
+  /// FILTER CHIPS
+  /// ------------------------------------------
+  Widget _buildFilters() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(
+        children: [
+          _chip("All", _statusFilter == "all", () {
+            setState(() => _statusFilter = "all");
+          }),
+
+          _chip("Lost", _statusFilter == "lost", () {
+            setState(() => _statusFilter = "lost");
+          }),
+
+          _chip("Found", _statusFilter == "found", () {
+            setState(() => _statusFilter = "found");
+          }),
+
+          _chip("Location", _selectedLocation != null, () async {
+            final loc = await showDialog<String?>(
+              context: context,
+              builder: (_) => SimpleDialog(
+                title: const Text("Select Location"),
+                children: [
+                  SimpleDialogOption(
+                      child: const Text("All"), onPressed: () => Navigator.pop(context, null)),
+                  ..._locations.map((l) => SimpleDialogOption(
+                        child: Text(l),
+                        onPressed: () => Navigator.pop(context, l),
+                      )),
+                ],
+              ),
+            );
+
+            setState(() => _selectedLocation = loc);
+          }),
+
+          _chip("Date", _selectedDate != null, _pickDate),
+
+          _chip(
+            _sortMode == "date"
+                ? (_sortAscending ? "Old → New" : "New → Old")
+                : "Sort: Location",
+            true,
+            () {
+              setState(() {
+                if (_sortMode == "date") {
+                  _sortAscending = !_sortAscending;
+                } else {
+                  _sortMode = "date";
+                  _sortAscending = false;
+                }
+              });
+            },
+          ),
+
+          _chip("Clear", false, _clearFilters, color: Colors.redAccent),
+        ],
+      ),
+    );
+  }
+
+  /// ------------------------------------------
+  /// ITEM CARD UI
+  /// ------------------------------------------
+  Widget _itemCard(Map<String, dynamic> item) {
+    final img = item["imageUrl"];
+    final dt = (item["timestamp"] as Timestamp?)?.toDate();
+    final dateStr = dt != null ? dt.toString().substring(0, 16) : "";
+
+    // 🔥 FIX: ITEM NAME (support both formats)
+    final String title = item["item_name"] 
+        ?? item["itemName"] 
+        ?? "Unnamed Item";
+
+    return Container(
+      margin: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+        ],
+      ),
+      child: Column(
+        children: [
+          if (img != null && img.toString().isNotEmpty)
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              child: Image.network(img,
+                height: 180, width: double.infinity, fit: BoxFit.cover),
+            ),
+
+          Padding(
+            padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Search container (full width)
-                Container(
-                  height: 56,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(color: chipColor, borderRadius: BorderRadius.circular(14)),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 6),
-                      Icon(Icons.search, color: textSecondary),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          decoration: InputDecoration(
-                            border: InputBorder.none,
-                            hintText: "Search for 'water bottle', 'ID card'...",
-                            hintStyle: TextStyle(color: textSecondary),
-                          ),
-                          style: TextStyle(color: textPrimary),
+
+                /// TITLE + STATUS
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: item["source"] == "LOST"
+                            ? Colors.red.shade100
+                            : Colors.green.shade100,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        item["source"] ?? "",
+                        style: TextStyle(
+                          color: item["source"] == "LOST"
+                              ? Colors.red
+                              : Colors.green,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                    ],
-                  ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 6),
+
+                Row(
+                  children: [
+                    const Icon(Icons.location_on, size: 18, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(item["location"] ?? ""),
+                  ],
+                ),
+
+                const SizedBox(height: 4),
+
+                Row(
+                  children: [
+                    const Icon(Icons.schedule, size: 18, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(dateStr),
+                  ],
                 ),
 
                 const SizedBox(height: 12),
 
-                // CHIPS ROW: left = scrollable chips, right = pinned Clear button (if active)
-                Row(
-                  children: [
-                    // Left: horizontally scrollable chips area
-                    Expanded(
-                      child: SizedBox(
-                        height: 48,
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.only(left: 4),
-                          child: Row(
-                            children: [
-                              _FilterChip.withIcon(
-                                label: 'All',
-                                icon: Icons.filter_none,
-                                chipColor: chipColor,
-                                textPrimary: textPrimary,
-                                selected: _statusFilter == 'all',
-                                onTap: () => setState(() => _statusFilter = 'all'),
-                              ),
-
-                              _FilterChip.withIcon(
-                                label: 'Lost',
-                                icon: Icons.report,
-                                chipColor: chipColor,
-                                textPrimary: textPrimary,
-                                selected: _statusFilter == 'lost',
-                                onTap: () => setState(() => _statusFilter = 'lost'),
-                                onClear: _statusFilter == 'lost' ? () => setState(() => _statusFilter = 'all') : null,
-                              ),
-
-                              _FilterChip.withIcon(
-                                label: 'Found',
-                                icon: Icons.check_circle,
-                                chipColor: chipColor,
-                                textPrimary: textPrimary,
-                                selected: _statusFilter == 'found',
-                                onTap: () => setState(() => _statusFilter = 'found'),
-                                onClear: _statusFilter == 'found' ? () => setState(() => _statusFilter = 'all') : null,
-                              ),
-
-                              const SizedBox(width: 4),
-
-                              // Location filter - show check when active
-                              _FilterChip.withIcon(
-                                label: _selectedLocationFilter == null ? 'Location' : '✓ ${_selectedLocationFilter!}',
-                                icon: _selectedLocationFilter == null ? Icons.place : Icons.check_circle,
-                                chipColor: chipColor,
-                                textPrimary: textPrimary,
-                                selected: _selectedLocationFilter != null,
-                                onTap: () => _pickLocationFilter(context),
-                                onClear: _selectedLocationFilter != null
-                                    ? () {
-                                        setState(() {
-                                          _selectedLocationFilter = null;
-                                        });
-                                      }
-                                    : null,
-                              ),
-
-                              const SizedBox(width: 4),
-
-                              // Date picker chip
-                              _FilterChip.withIcon(
-                                label: _selectedDate == null ? 'Date' : '✓ ${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
-                                icon: _selectedDate == null ? Icons.schedule : Icons.calendar_today,
-                                chipColor: chipColor,
-                                textPrimary: textPrimary,
-                                selected: _selectedDate != null,
-                                onTap: () => _pickDate(context),
-                                onClear: _selectedDate != null
-                                    ? () {
-                                        setState(() {
-                                          _selectedDate = null;
-                                        });
-                                      }
-                                    : null,
-                              ),
-
-                              const SizedBox(width: 4),
-
-                              // Sort-by-location toggle
-                              _FilterChip.withIcon(
-                                label: _sortMode == 'location' ? (_sortAscending ? 'Loc A→Z' : 'Loc Z→A') : 'Sort: Location',
-                                icon: _sortMode == 'location' ? (_sortAscending ? Icons.arrow_upward : Icons.arrow_downward) : Icons.sort_by_alpha,
-                                chipColor: chipColor,
-                                textPrimary: textPrimary,
-                                selected: _sortMode == 'location',
-                                onTap: () => _toggleSortMode('location'),
-                                onClear: _sortMode == 'location'
-                                    ? () => setState(() {
-                                          _sortMode = 'date';
-                                          _sortAscending = false;
-                                        })
-                                    : null,
-                              ),
-
-                              const SizedBox(width: 4),
-
-                              // Sort-by-date toggle
-                              _FilterChip.withIcon(
-                                label: _sortMode == 'date' ? (_sortAscending ? 'Date Old→New' : 'Date New→Old') : 'Sort: Date',
-                                icon: _sortMode == 'date' ? (_sortAscending ? Icons.arrow_upward : Icons.arrow_downward) : Icons.schedule,
-                                chipColor: chipColor,
-                                textPrimary: textPrimary,
-                                selected: _sortMode == 'date',
-                                onTap: () => _toggleSortMode('date'),
-                                onClear: _sortMode == 'date'
-                                    ? () => setState(() {
-                                          _sortMode = 'location';
-                                          _sortAscending = true;
-                                        })
-                                    : null,
-                              ),
-
-                              const SizedBox(width: 8),
-                            ],
-                          ),
-                        ),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ChatPage()),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: kPrimary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-
-                    // Right: pinned Clear button (visible when any filter active)
-                    if (anyFilterActive) ...[
-                      const SizedBox(width: 12),
-                      _PinnedClearButton(
-                        onClear: () {
-                          final prevStatus = _statusFilter;
-                          final prevDate = _selectedDate;
-                          final prevLoc = _selectedLocationFilter;
-                          final prevSortMode = _sortMode;
-                          final prevSortAsc = _sortAscending;
-
-                          setState(() {
-                            _statusFilter = 'all';
-                            _selectedDate = null;
-                            _selectedLocationFilter = null;
-                            _sortMode = 'date';
-                            _sortAscending = false;
-                          });
-
-                          ScaffoldMessenger.of(context).clearSnackBars();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: const Text('Filters cleared'),
-                              action: SnackBarAction(
-                                label: 'Undo',
-                                onPressed: () {
-                                  setState(() {
-                                    _statusFilter = prevStatus;
-                                    _selectedDate = prevDate;
-                                    _selectedLocationFilter = prevLoc;
-                                    _sortMode = prevSortMode;
-                                    _sortAscending = prevSortAsc;
-                                  });
-                                },
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ] else
-                      const SizedBox(width: 12),
-                  ],
+                    child: Text(
+                      item["source"] == "LOST"
+                          ? "Chat with Finder"
+                          : "Chat with Owner",
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -554,234 +437,20 @@ class _HomePageFeedState extends State<HomePageFeed> {
       ),
     );
   }
-}
 
-/// Pinned clear button (right side)
-class _PinnedClearButton extends StatelessWidget {
-  final VoidCallback onClear;
-  const _PinnedClearButton({required this.onClear, super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: kPrimary,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onClear,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          child: Row(
-            children: const [
-              Icon(Icons.clear, color: Colors.white, size: 18),
-              SizedBox(width: 8),
-              Text('Clear', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Filter chip widgets (Option A small X at right)
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final Color primary;
-  final Color chipColor;
-  final Color textPrimary;
-  final IconData? icon;
-  final VoidCallback? onTap;
-  final VoidCallback? onClear; // new: optional clear callback (renders small X at right)
-
-  const _FilterChip({
-    required this.label,
-    required this.selected,
-    required this.primary,
-    required this.chipColor,
-    required this.textPrimary,
-    this.icon,
-    this.onTap,
-    this.onClear,
-    super.key,
-  });
-
-  const _FilterChip.withIcon({
-    required this.label,
-    required this.chipColor,
-    required this.textPrimary,
-    required IconData this.icon,
-    required bool this.selected,
-    this.onTap,
-    this.onClear,
-    super.key,
-  }) : primary = Colors.transparent;
-
-  @override
-  Widget build(BuildContext context) {
-    // When selected: use bold primary color with shadow; inactive: light grey
-    final bg = selected ? kPrimary : chipColor;
-    final textColor = selected ? Colors.white : textPrimary;
-    final fontWeight = selected ? FontWeight.bold : FontWeight.w500;
-    final fontSize = selected ? 14.0 : 13.0;
-
+  /// ------------------------------------------
+  /// FILTER CHIP
+  /// ------------------------------------------
+  Widget _chip(String label, bool active, VoidCallback onTap, {Color? color}) {
     return Container(
       margin: const EdgeInsets.only(right: 8),
-      decoration: selected
-          ? BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(color: kPrimary.withOpacity(0.25), blurRadius: 6, offset: const Offset(0, 3)),
-              ],
-            )
-          : null,
-      child: Material(
-        color: bg,
-        borderRadius: BorderRadius.circular(10),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(10),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(label, style: TextStyle(color: textColor, fontSize: fontSize, fontWeight: fontWeight)),
-                if (icon != null) ...[
-                  const SizedBox(width: 6),
-                  Icon(icon, color: textColor, size: 16),
-                ],
-
-                // SMALL X ICON WHEN APPLICABLE - more prominent when selected
-                if (onClear != null) ...[
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: onClear,
-                    behavior: HitTestBehavior.opaque,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: selected
-                          ? BoxDecoration(color: Colors.white.withOpacity(0.18), borderRadius: BorderRadius.circular(4))
-                          : null,
-                      child: Icon(Icons.close, size: 14, color: textColor),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Item card (kept from your original)
-class _ItemCard extends StatelessWidget {
-  final String title;
-  final String statusText;
-  final Color statusColorBg;
-  final Color statusColorText;
-  final String imageUrl;
-  final String location;
-  final String time;
-  final String buttonText;
-  final Color cardColor;
-  final Color primary;
-  final Color textPrimary;
-  final Color textSecondary;
-  final VoidCallback onChatPressed;
-
-  const _ItemCard({
-    required this.title,
-    required this.statusText,
-    required this.statusColorBg,
-    required this.statusColorText,
-    required this.imageUrl,
-    required this.location,
-    required this.time,
-    required this.buttonText,
-    required this.cardColor,
-    required this.primary,
-    required this.textPrimary,
-    required this.textSecondary,
-    required this.onChatPressed,
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Container(
-        decoration: BoxDecoration(
-          color: cardColor,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: const [
-            BoxShadow(
-              color: Color.fromRGBO(0, 0, 0, 0.05),
-              offset: Offset(0, 4),
-              blurRadius: 12,
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            AspectRatio(
-              aspectRatio: 4 / 3,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: Image.network(imageUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox.shrink()),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(child: Text(title, style: TextStyle(color: textPrimary, fontSize: 18, fontWeight: FontWeight.bold))),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(color: statusColorBg, borderRadius: BorderRadius.circular(6)),
-                        child: Text(
-                          statusText,
-                          style: TextStyle(color: statusColorText, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.8),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(Icons.location_on, size: 18, color: textSecondary),
-                      const SizedBox(width: 4),
-                      Expanded(child: Text(location, style: TextStyle(color: textSecondary, fontSize: 13))),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(Icons.schedule, size: 18, color: textSecondary),
-                      const SizedBox(width: 4),
-                      Text(time, style: TextStyle(color: textSecondary, fontSize: 13)),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 40,
-                    child: ElevatedButton(
-                      onPressed: onChatPressed,
-                      style: ElevatedButton.styleFrom(backgroundColor: primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-                      child: Text(buttonText, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: active,
+        selectedColor: kPrimary,
+        labelStyle: TextStyle(color: active ? Colors.white : Colors.black),
+        onSelected: (_) => onTap(),
+        backgroundColor: Colors.grey.shade200,
       ),
     );
   }

@@ -1,6 +1,6 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 
 void main() {
@@ -47,31 +47,46 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  // ---------------------------------------------------------
+  // ⭐ CLEAN FIREBASE LOGIN → AuthService handles everything
+  // ---------------------------------------------------------
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     setState(() => _isSubmitting = true);
-    await Future.delayed(const Duration(milliseconds: 900));
-    setState(() => _isSubmitting = false);
-    // Mark demo auth as logged in and return to caller.
-    await AuthService.login();
+
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    // AuthService already does Firebase login + Firestore profile setup
+    final String? error = await AuthService.instance.login(email, password);
 
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Logged in (demo).')));
 
-    // Return `true` to signal successful login to the previous route.
-    Navigator.of(context).pop(true);
+    if (error == null) {
+      // SUCCESS
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Login successful!")),
+      );
+
+      Navigator.of(context).pop(true); // return success
+    } else {
+      // FAILED
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
+    }
+
+    if (mounted) setState(() => _isSubmitting = false);
   }
 
+  // Forgot Password
   void _openForgotPassword() {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Forgot password tapped')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text("Forgot password tapped")));
   }
 
-  /// Replace these with your Azure values and implement redirect handling for a complete flow.
+  // Outlook Sign-in (placeholder)
   Future<void> _signInWithOutlook() async {
     const clientId = 'YOUR_AZURE_APP_CLIENT_ID';
     const redirectUri = 'msauth://com.your.app/redirect';
@@ -91,16 +106,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (await canLaunchUrl(authorizeUrl)) {
       await launchUrl(authorizeUrl, mode: LaunchMode.externalApplication);
-      // After redirect to your app, exchange code for tokens (see flutter_appauth or backend)
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not open browser for Outlook sign-in.'),
-        ),
+        const SnackBar(content: Text('Could not open Outlook sign-in')),
       );
     }
   }
 
+  // ---------------------------------------------------------
+  // UI (NOT MODIFIED)
+  // ---------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     final primary = const Color(0xFF8C2F39);
@@ -113,14 +128,14 @@ class _LoginScreenState extends State<LoginScreen> {
             return SingleChildScrollView(
               padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
               child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight - 56,
-                ),
+                constraints:
+                    BoxConstraints(minHeight: constraints.maxHeight - 56),
                 child: IntrinsicHeight(
                   child: Column(
-                    mainAxisSize: MainAxisSize.max,
                     children: [
                       const SizedBox(height: 6),
+
+                      // Logo
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -132,161 +147,64 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ],
                       ),
+
                       const SizedBox(height: 18),
                       const Text(
-                        'Welcome Back',
-                        textAlign: TextAlign.center,
+                        "Welcome Back",
                         style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF333333),
-                        ),
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF333333)),
                       ),
                       const SizedBox(height: 6),
                       const Text(
-                        'Find what\'s lost on campus.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: Color(0xFF999999),
-                        ),
+                        "Find what's lost on campus.",
+                        style: TextStyle(fontSize: 15, color: Color(0xFF999999)),
                       ),
                       const SizedBox(height: 28),
 
-                      // Form
+                      // ---------------- FORM ----------------
                       ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 520),
                         child: Form(
                           key: _formKey,
                           child: Column(
                             children: [
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(bottom: 8.0),
-                                  child: Text(
-                                    'Amrita Email',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      color: Colors.grey[800],
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ),
+                              _label("Amrita Email"),
+
                               TextFormField(
                                 controller: _emailController,
                                 keyboardType: TextInputType.emailAddress,
-                                autofillHints: const [AutofillHints.email],
-                                decoration: InputDecoration(
-                                  hintText: 'yourname@am.students.amrita.edu',
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 16,
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide(
-                                      color: Colors.grey.shade200,
-                                    ),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide(
-                                      color: primary.withOpacity(0.9),
-                                    ),
-                                  ),
+                                decoration: _inputStyle(
+                                  hint: "yourname@am.students.amrita.edu",
+                                  primary: primary,
                                 ),
                                 validator: (v) {
                                   if (v == null || v.trim().isEmpty)
-                                    return 'Please enter an email';
-                                  if (!v.contains('@'))
-                                    return 'Enter a valid email';
+                                    return "Please enter an email";
+                                  if (!v.contains("@"))
+                                    return "Enter a valid email";
                                   return null;
                                 },
                               ),
+
                               const SizedBox(height: 16),
 
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(bottom: 8.0),
-                                  child: Text(
-                                    'Password',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      color: Colors.grey[800],
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ),
-
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                    color: Colors.grey.shade200,
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: TextFormField(
-                                        controller: _passwordController,
-                                        obscureText: _obscurePassword,
-                                        decoration: const InputDecoration(
-                                          hintText: 'Enter your password',
-                                          border: InputBorder.none,
-                                          contentPadding: EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 16,
-                                          ),
-                                        ),
-                                        validator: (v) =>
-                                            (v == null || v.isEmpty)
-                                            ? 'Please enter a password'
-                                            : null,
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: Icon(
-                                        _obscurePassword
-                                            ? Icons.visibility
-                                            : Icons.visibility_off,
-                                        color: const Color(0xFF999999),
-                                      ),
-                                      onPressed: () => setState(
-                                        () => _obscurePassword =
-                                            !_obscurePassword,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                              _label("Password"),
+                              _passwordField(primary),
 
                               Align(
                                 alignment: Alignment.centerRight,
                                 child: TextButton(
                                   onPressed: _openForgotPassword,
-                                  style: TextButton.styleFrom(
-                                    padding: const EdgeInsets.only(top: 8),
-                                  ),
-                                  child: Text(
-                                    'Forgot Password?',
-                                    style: TextStyle(
-                                      color: primary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
+                                  child: Text("Forgot Password?",
+                                      style: TextStyle(color: primary)),
                                 ),
                               ),
 
                               const SizedBox(height: 18),
 
+                              // LOGIN BUTTON
                               SizedBox(
                                 width: double.infinity,
                                 height: 56,
@@ -295,66 +213,34 @@ class _LoginScreenState extends State<LoginScreen> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: primary,
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
+                                        borderRadius:
+                                            BorderRadius.circular(14)),
                                   ),
                                   child: _isSubmitting
                                       ? const CircularProgressIndicator(
-                                          color: Colors.white,
-                                        )
-                                      : const Text(
-                                          'Login',
+                                          color: Colors.white)
+                                      : const Text("Login",
                                           style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold)),
                                 ),
                               ),
 
                               const SizedBox(height: 12),
 
-                              // --- Outlook sign-in UI (replaces Sign-Up) ---
-                              Padding(
-                                padding: const EdgeInsets.only(top: 8.0),
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      'Or',
-                                      style: TextStyle(color: Colors.grey[500]),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    SizedBox(
-                                      width: double.infinity,
-                                      height: 48,
-                                      child: OutlinedButton.icon(
-                                        onPressed: _signInWithOutlook,
-                                        icon: Image.network(
-                                          'https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg',
-                                          height: 18,
-                                          width: 18,
-                                          errorBuilder: (_, __, ___) =>
-                                              const Icon(Icons.mail, size: 18),
-                                        ),
-                                        label: const Text(
-                                          'Sign in with Outlook',
-                                        ),
-                                        style: OutlinedButton.styleFrom(
-                                          side: BorderSide(
-                                            color: Colors.grey.shade300,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                          ),
-                                          foregroundColor: Colors.black87,
-                                          backgroundColor: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                  ],
+                              const SizedBox(height: 8),
+                              Text("Or",
+                                  style:
+                                      TextStyle(color: Colors.grey[500])),
+                              const SizedBox(height: 8),
+
+                              SizedBox(
+                                width: double.infinity,
+                                height: 48,
+                                child: OutlinedButton.icon(
+                                  onPressed: _signInWithOutlook,
+                                  icon: const Icon(Icons.mail),
+                                  label: const Text("Sign in with Outlook"),
                                 ),
                               ),
                             ],
@@ -370,6 +256,78 @@ class _LoginScreenState extends State<LoginScreen> {
             );
           },
         ),
+      ),
+    );
+  }
+
+  // ---------------- Helpers -------------------------
+  Widget _label(String text) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 8.0),
+        child: Text(text,
+            style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF555555))),
+      ),
+    );
+  }
+
+  InputDecoration _inputStyle({
+    required String hint,
+    required Color primary,
+  }) {
+    return InputDecoration(
+      hintText: hint,
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: Colors.grey.shade200),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: primary.withOpacity(0.9)),
+      ),
+    );
+  }
+
+  Widget _passwordField(Color primary) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextFormField(
+              controller: _passwordController,
+              obscureText: _obscurePassword,
+              decoration: const InputDecoration(
+                hintText: "Enter your password",
+                border: InputBorder.none,
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              ),
+              validator: (v) =>
+                  v == null || v.isEmpty ? "Please enter a password" : null,
+            ),
+          ),
+          IconButton(
+            icon: Icon(
+              _obscurePassword ? Icons.visibility : Icons.visibility_off,
+              color: Colors.grey,
+            ),
+            onPressed: () =>
+                setState(() => _obscurePassword = !_obscurePassword),
+          ),
+        ],
       ),
     );
   }

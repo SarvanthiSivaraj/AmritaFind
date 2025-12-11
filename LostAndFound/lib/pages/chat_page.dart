@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home_page.dart';
-
+const Color kPrimaryChat = Color(0xFF8D303B);
+//chat page
 /// ================= CHAT =================
 
 class ChatPage extends StatefulWidget {
@@ -215,6 +216,10 @@ class _ChatPageState extends State<ChatPage> {
                       Expanded(
                         child: TextField(
                           controller: _messageController,
+                          keyboardType: TextInputType.multiline,
+                          textInputAction: TextInputAction.newline,
+                          minLines: 1,
+                          maxLines: 5,
                           decoration: InputDecoration(
                             hintText: 'Type a message...',
                             hintStyle: TextStyle(color: textSecondary),
@@ -342,6 +347,7 @@ class _ReceivedMessage extends StatelessWidget {
                 child: Text(
                   message,
                   style: TextStyle(color: bubbleText, fontSize: 15),
+                  softWrap: true,
                 ),
               ),
             ],
@@ -400,6 +406,7 @@ class _SentMessage extends StatelessWidget {
                 child: Text(
                   message,
                   style: const TextStyle(color: Colors.white, fontSize: 15),
+                  softWrap: true,
                 ),
               ),
             ],

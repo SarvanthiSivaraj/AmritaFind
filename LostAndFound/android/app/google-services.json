@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "832352391504",
+    "project_id": "amritafind-ee505",
+    "storage_bucket": "amritafind-ee505.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:832352391504:android:b4c95827353623d108dc55",
+        "android_client_info": {
+          "package_name": "com.example.lostandfound"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD933XpmUcngfETqUd9SEFosnWJAP8XYQk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
