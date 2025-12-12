@@ -65,16 +65,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (error == null) {
       // SUCCESS
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Login successful!")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Login successful!")));
 
       Navigator.of(context).pop(true); // return success
     } else {
       // FAILED
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
     }
 
     if (mounted) setState(() => _isSubmitting = false);
@@ -82,8 +82,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // Forgot Password
   void _openForgotPassword() {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text("Forgot password tapped")));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text("Forgot password tapped")));
   }
 
   // Outlook Sign-in (placeholder)
@@ -128,8 +129,9 @@ class _LoginScreenState extends State<LoginScreen> {
             return SingleChildScrollView(
               padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
               child: ConstrainedBox(
-                constraints:
-                    BoxConstraints(minHeight: constraints.maxHeight - 56),
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight - 56,
+                ),
                 child: IntrinsicHeight(
                   child: Column(
                     children: [
@@ -152,14 +154,18 @@ class _LoginScreenState extends State<LoginScreen> {
                       const Text(
                         "Welcome Back",
                         style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF333333)),
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF333333),
+                        ),
                       ),
                       const SizedBox(height: 6),
                       const Text(
                         "Find what's lost on campus.",
-                        style: TextStyle(fontSize: 15, color: Color(0xFF999999)),
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Color(0xFF999999),
+                        ),
                       ),
                       const SizedBox(height: 28),
 
@@ -176,7 +182,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 controller: _emailController,
                                 keyboardType: TextInputType.emailAddress,
                                 decoration: _inputStyle(
-                                  hint: "yourname@am.students.amrita.edu",
+                                  hint:
+                                      "CB.XX.XX.XXX.XXXXX.@cb.students.amrita.edu",
                                   primary: primary,
                                 ),
                                 validator: (v) {
@@ -197,8 +204,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                 alignment: Alignment.centerRight,
                                 child: TextButton(
                                   onPressed: _openForgotPassword,
-                                  child: Text("Forgot Password?",
-                                      style: TextStyle(color: primary)),
+                                  child: Text(
+                                    "Forgot Password?",
+                                    style: TextStyle(color: primary),
+                                  ),
                                 ),
                               ),
 
@@ -213,25 +222,31 @@ class _LoginScreenState extends State<LoginScreen> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: primary,
                                     shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(14)),
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
                                   ),
                                   child: _isSubmitting
                                       ? const CircularProgressIndicator(
-                                          color: Colors.white)
-                                      : const Text("Login",
+                                          color: Colors.white,
+                                        )
+                                      : const Text(
+                                          "Login",
                                           style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold)),
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
                                 ),
                               ),
 
                               const SizedBox(height: 12),
 
                               const SizedBox(height: 8),
-                              Text("Or",
-                                  style:
-                                      TextStyle(color: Colors.grey[500])),
+                              Text(
+                                "Or",
+                                style: TextStyle(color: Colors.grey[500]),
+                              ),
                               const SizedBox(height: 8),
 
                               SizedBox(
@@ -266,25 +281,24 @@ class _LoginScreenState extends State<LoginScreen> {
       alignment: Alignment.centerLeft,
       child: Padding(
         padding: const EdgeInsets.only(bottom: 8.0),
-        child: Text(text,
-            style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF555555))),
+        child: Text(
+          text,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF555555),
+          ),
+        ),
       ),
     );
   }
 
-  InputDecoration _inputStyle({
-    required String hint,
-    required Color primary,
-  }) {
+  InputDecoration _inputStyle({required String hint, required Color primary}) {
     return InputDecoration(
       hintText: hint,
       filled: true,
       fillColor: Colors.white,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
         borderSide: BorderSide(color: Colors.grey.shade200),
@@ -312,8 +326,10 @@ class _LoginScreenState extends State<LoginScreen> {
               decoration: const InputDecoration(
                 hintText: "Enter your password",
                 border: InputBorder.none,
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
               ),
               validator: (v) =>
                   v == null || v.isEmpty ? "Please enter a password" : null,
