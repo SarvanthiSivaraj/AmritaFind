@@ -13,93 +13,85 @@ The absence of such a coordinated solution leads to many lost items remaining un
 
 ---
 
-## 💡 Solution
+## Proposed Solution
 
-**AmritaFind** is a Flutter-based mobile application that creates a community-driven Lost & Found platform specifically for Amrita University. It bridges the gap between students who've lost items and those who've found them, featuring:
+AmritaFind is a dedicated Flutter-based mobile application designed to establish a community-driven Lost & Found ecosystem for Amrita University. The platform streamlines communication between students who have lost items and those who have found them by offering a seamless, technology-enhanced experience. Key features include:
 
-- **Real-time item listings** with Firebase Firestore integration
-- **AI-powered chatbot** assistance using Google Gemini API
-- **Secure authentication** via Firebase Auth with Outlook integration
-- **Image-based item documentation** with Firebase Storage
-- **Location and time-based filtering** for precise item searches
-- **Direct messaging** between students
-- **User profiles** with academic information (department, year, roll number)
+- **Real-time item listings** powered by Firebase Firestore for instant updates
+- **AI-driven assistance** using the Google Gemini API to help users locate items efficiently
+- **Secure user authentication** through Firebase Auth
+- **Image-supported item documentation** using Firebase Storage for accurate identification
+- **Location- and time-based filtering** to narrow down searches with high precision
+- **Built-in direct messaging** enabling students to connect quickly and securely
+- **Comprehensive user profiles** containing verified academic details (department, year, roll number)
 
----
-
-## ✨ Key Features
-
-### 1. **User Authentication**
-- Firebase-based email/password authentication
-- Outlook/Microsoft Account sign-in support
-- Secure profile management with academic details
-
-### 2. **Lost & Found Posting**
-- Create lost or found item posts with:
-  - Item name and detailed description
-  - Multiple image uploads (up to 5 images)
-  - Location selection from 10+ campus locations
-  - Contact information
-  - Secret questions for ownership verification
-- Real-time Firestore database synchronization
-
-### 3. **Smart Search & Filtering**
-- Filter by status (Lost/Found/All)
-- Location-based search
-- Date range filtering
-- Text-based search across item names and descriptions
-- Multiple sorting options (date, relevance)
-
-### 4. **AI-Powered Chatbot**
-- Integrated Google Gemini API assistant
-- Context-aware responses about lost/found items
-- Real-time chat interface
-- Environmental variable-based API configuration
-
-### 5. **Direct Messaging**
-- Peer-to-peer chat between students
-- Real-time message synchronization
-- User avatar display
-
-### 6. **User Profile Management**
-- View personal information:
-  - Full name
-  - Department
-  - Academic year
-  - Roll number (formatted as: `CB.SC.U4CSE29999`)
-- Edit profile details
-- View personal lost & found posts
-- Activity tracking
-
-### 7. **Responsive Design**
-- Mobile-optimized UI
-- Smooth animations and transitions
-- Light theme with custom color scheme
-- Adaptive layouts for various screen sizes
+AmritaFind enhances campus connectivity, reduces unclaimed items, and modernizes the lost-and-found process through intelligent, user-friendly features.
 
 ---
 
-## 🏗️ Architecture
+## Key Features
+1. **User Authentication**
+   - Secure login and registration using Firebase Authentication
+   - Managed user profiles with verified academic details
+   - Seamless access control for students across all campuses
+
+2. **Lost & Found Posting**
+   - Create detailed Lost or Found item posts with:
+     - Item name and comprehensive description
+     - Support for multiple image uploads
+     - Optional contact information
+   - Instant synchronization of posts through Firebase Firestore
+
+3. **Smart Search & Advanced Filtering**
+   - Filter results by item status (Lost / Found / All)
+   - Location-based search to narrow down results
+   - Date-range filtering to track recent activity
+   - Full-text search across item names and descriptions
+   - Multiple sorting modes (e.g., date added, relevance)
+
+4. **AI-Powered Chatbot**
+   - Integrated assistant powered by the Google Gemini API
+   - Provides context-aware guidance related to lost and found items
+   - Real-time conversational interface for quick support
+   - Secure API configuration through environment variables
+
+5. **Direct Messaging System**
+   - Real-time peer-to-peer chat between students
+   - Instant message updates with Firestore synchronization
+   - User avatar integration for better identification
+
+6. **User Profile Management**
+   - View and maintain personal details:
+     - Full name
+     - Department
+     - Academic year
+     - Roll number (standard format: CB.SC.U4CSE29999)
+   - Edit and update profile information anytime
+   - Access a dashboard of the user's own Lost & Found posts
+
+---
+
+## Architecture
 
 ```
 lostandfound/
 ├── lib/
-│   ├── main.dart                          # App entry point
-│   ├── firebase_options.dart              # Firebase configuration
+│   ├── main.dart
+│   ├── firebase_options.dart
 │   ├── pages/
-│   │   ├── onboarding_screen.dart         # Welcome & feature overview
-│   │   ├── login_page.dart                # Authentication screen
-│   │   ├── home_page.dart                 # Main feed with filtering
-│   │   ├── post_item_form_page.dart       # Create lost/found posts
-│   │   ├── profile_page.dart              # User profile & posts
-│   │   ├── chat_page.dart                 # Direct messaging
-│   │   └── chat_bot_page.dart             # AI chatbot interface
+│   │   ├── onboarding_screen.dart
+│   │   ├── login_page.dart
+│   │   ├── home_page.dart
+│   │   ├── post_item_form_page.dart
+│   │   ├── profile_page.dart
+│   │   ├── chat_page.dart
+│   │   └── chat_bot_page.dart
 │   └── services/
-│       ├── auth_service.dart              # Firebase authentication
-│       └── ai_service.dart                # Google Gemini integration
-├── android/                               # Android platform code
-├── ios/                                   # iOS platform code
-└── pubspec.yaml                           # Dependencies configuration
+│       ├── auth_service.dart
+│       └── ai_service.dart
+├── android/
+├── ios/
+└── pubspec.yaml
 ```
 
 ### Technology Stack
@@ -109,13 +101,12 @@ lostandfound/
 | Frontend | Flutter 3.0+ |
 | Backend | Firebase (Auth, Firestore, Storage) |
 | AI/ML | Google Gemini 2.5 Flash API |
-| State Management | StatefulWidget |
 | Image Upload | Firebase Storage |
 | Real-time DB | Cloud Firestore |
 
 ---
 
-## 🚀 Installation
+## Installation
 
 ### Prerequisites
 
@@ -180,12 +171,12 @@ flutter run -d chrome
 
 ---
 
-## 📱 Usage
+## Usage
 
 ### First-Time Users
 
 1. **Onboarding**: Review the welcome screens to understand app features
-2. **Login/Sign-up**: Create an account using email or Outlook
+2. **Login/Sign-up**: Create an account using email
 3. **Complete Profile**: Add your department, year, and roll number
 
 ### Finding Lost Items
@@ -205,9 +196,7 @@ flutter run -d chrome
    - Detailed description
    - Campus location
    - Contact information
-   - Add up to 5 photos
-3. Set a security question for ownership verification
-4. Submit to make it visible to all users
+3. Submit to make it visible to all users
 
 ### Using the AI Chatbot
 
@@ -225,17 +214,16 @@ flutter run -d chrome
 
 ---
 
-## 🔐 Security & Privacy
+## Security & Privacy
 
 - **Authentication**: Secure Firebase authentication with password encryption
 - **Data Privacy**: User data stored securely in Firestore
 - **Image Security**: Images uploaded to Firebase Storage with proper permissions
-- **Verification**: Secret questions prevent false claims
 - **API Keys**: Sensitive keys managed through environment variables (`.env`)
 
 ---
 
-## 📊 Database Schema
+## Database Schema
 
 ### Collections
 
@@ -269,31 +257,8 @@ flutter run -d chrome
 
 ---
 
-## 🐛 Known Issues & Roadmap
-
-### Current Limitations
-- Outlook integration requires Azure AD configuration
-- Image uploads limited to 5 per post
-
-### Planned Features (v2.0)
-- [ ] Push notifications for item matches
-- [ ] Advanced location mapping (Google Maps integration)
-- [ ] Item condition photos with AI analysis
-- [ ] Reputation/rating system
-- [ ] QR code-based item tracking
-- [ ] SMS notifications
-- [ ] Offline mode support
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-<div align="center">
-
-**Built with ❤️ for the Amrita Community**
-
-[⬆ Back to Top](#amritafind---lost--found-platform-for-amrita-university)
-
-</div>
+Team:
+- Sarvanthikha SR
+- Sanjjiiev S
+- Eshanaa Ajith K
+- Sanjai P G
