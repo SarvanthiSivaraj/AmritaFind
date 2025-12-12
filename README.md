@@ -1,31 +1,15 @@
 # AmritaFind - Lost & Found Platform for Amrita University
 
-<div align="center">
+## Problem Statement
 
-[![Flutter](https://img.shields.io/badge/Flutter-3.0+-blue?logo=flutter)](https://flutter.dev)
-[![Firebase](https://img.shields.io/badge/Firebase-Latest-orange?logo=firebase)](https://firebase.google.com)
-[![License](https://img.shields.io/badge/License-MIT-green)](#license)
-[![Status](https://img.shields.io/badge/Status-Active-success)](#)
+Amrita University operates across multiple campuses and serves thousands of students, yet there is no unified platform to manage lost and found items efficiently. As a result, students who misplace personal belongings—such as wallets, ID cards, books, or water bottles—face significant challenges. Currently, they lack a structured system to:
 
-A comprehensive mobile application designed to help Amrita University students locate lost items and report found items on campus.
+- **Report lost items** with clear and detailed descriptions
+- **Browse or search for found items** submitted by other students
+- **Communicate directly** with individuals who have located their belongings
+- **Receive intelligent, AI-driven assistance** to help trace or identify items
 
-[Features](#features) • [Installation](#installation) • [Usage](#usage) • [Architecture](#architecture)
-
-</div>
-
----
-
-## 📋 Problem Statement
-
-Amrita University campus spans multiple locations with thousands of students. When students lose personal items—wallets, ID cards, books, water bottles—they have no centralized platform to:
-
-- **Report lost items** and provide detailed descriptions
-- **Search for found items** reported by other students
-- **Connect directly** with those who've found their items
-- **Verify item ownership** through security questions
-- **Receive intelligent assistance** in locating items through AI
-
-This lack of a coordinated system results in lost items remaining unclaimed and frustration for affected students.
+The absence of such a coordinated solution leads to many lost items remaining unclaimed, increased administrative workload, and unnecessary inconvenience for students and staff.
 
 ---
 
