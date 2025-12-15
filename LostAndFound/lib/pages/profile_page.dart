@@ -1,6 +1,12 @@
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:async/async.dart';
 
 const Color kPrimary = Color(0xFF8C2F39);
@@ -15,152 +21,187 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   bool _loading = true;
-  Map<String, dynamic>? _data;
+  Map<String, dynamic>? _profile;
+  String _roll = "";
 
   @override
   void initState() {
     super.initState();
-    _loadUser();
+    _loadProfile();
   }
 
-  Future<void> _loadUser() async {
+  // -------------------- LOAD PROFILE --------------------
+  Future<void> _loadProfile() async {
     final user = FirebaseAuth.instance.currentUser;
 
-    if (user == null) {
+    if (user == null || user.email == null) {
       setState(() {
         _loading = false;
-        _data = null;
+        _profile = null;
       });
       return;
     }
 
-    final doc = await FirebaseFirestore.instance
-        .collection("users")
-        .doc(user.uid)
-        .get();
+    _roll = user.email!.split('@')[0].toUpperCase();
+    final ref = FirebaseFirestore.instance.collection("users").doc(user.uid);
+    final snap = await ref.get();
 
-    if (!doc.exists) {
-      final profile = {
-        "name": user.email?.split("@")[0] ?? "Student",
+    if (!snap.exists) {
+      final data = {
+        "name": _roll,
         "department": "CSE",
         "year": "1",
-        "rollNumber": "00000",
         "contact": "",
+        "photo": "",
       };
-
-      await FirebaseFirestore.instance
-          .collection("users")
-          .doc(user.uid)
-          .set(profile);
-
-      setState(() {
-        _data = profile;
-        _loading = false;
-      });
-
-      return;
+      await ref.set(data);
+      _profile = data;
+    } else {
+      _profile = snap.data();
     }
 
-    setState(() {
-      _data = doc.data();
-      _loading = false;
-    });
+    setState(() => _loading = false);
   }
 
-  Future<void> _openEdit() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => EditProfileScreen(
-          name: _data!["name"],
-          department: _data!["department"],
-          year: _data!["year"],
-          roll: _data!["rollNumber"],
-          contact: _data!["contact"],
-        ),
-      ),
-    );
+  // -------------------- LOGOUT --------------------
+  Future<void> _logout() async {
+    await FirebaseAuth.instance.signOut();
+    if (!mounted) return;
+    Navigator.pop(context);
+  }
 
-    if (result == null) return;
+  // -------------------- PICK PROFILE PIC --------------------
+  Future<void> _pickProfilePic() async {
+    final picker = ImagePicker();
+    final img = await picker.pickImage(source: ImageSource.gallery);
+    if (img == null) return;
 
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    final user = FirebaseAuth.instance.currentUser!;
+    final ref =
+        FirebaseStorage.instance.ref("profile_pics/${user.uid}.jpg");
 
+    if (kIsWeb) {
+      Uint8List bytes = await img.readAsBytes();
+      await ref.putData(bytes);
+    } else {
+      await ref.putFile(File(img.path));
+    }
+
+    final url = await ref.getDownloadURL();
     await FirebaseFirestore.instance
         .collection("users")
         .doc(user.uid)
-        .update(result);
+        .update({"photo": url});
 
-    setState(() {
-      _data!.addAll(result);
-    });
+    _loadProfile();
   }
 
-  /// -------------------------------
-  /// LOAD USER POSTS (Lost + Found)
-  /// -------------------------------
-  Widget _buildMyPosts() {
-    final uid = FirebaseAuth.instance.currentUser!.uid;
+  // -------------------- EDIT PROFILE --------------------
+  Future<void> _editProfile() async {
+    final name = TextEditingController(text: _profile!["name"]);
+    final dept = TextEditingController(text: _profile!["department"]);
+    final year = TextEditingController(text: _profile!["year"]);
+    final contact = TextEditingController(text: _profile!["contact"]);
 
-    final lostStream = FirebaseFirestore.instance
+    await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Edit Profile"),
+        content: SingleChildScrollView(
+          child: Column(
+            children: [
+              TextField(controller: name, decoration: const InputDecoration(labelText: "Name")),
+              TextField(controller: dept, decoration: const InputDecoration(labelText: "Department")),
+              TextField(controller: year, decoration: const InputDecoration(labelText: "Year")),
+              TextField(controller: contact, decoration: const InputDecoration(labelText: "Contact")),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          ElevatedButton(
+            onPressed: () async {
+              final user = FirebaseAuth.instance.currentUser!;
+              await FirebaseFirestore.instance
+                  .collection("users")
+                  .doc(user.uid)
+                  .update({
+                "name": name.text.trim(),
+                "department": dept.text.trim(),
+                "year": year.text.trim(),
+                "contact": contact.text.trim(),
+              });
+              Navigator.pop(context);
+              _loadProfile();
+            },
+            child: const Text("Save"),
+          )
+        ],
+      ),
+    );
+  }
+
+  // -------------------- MY POSTS --------------------
+  Widget _myPosts() {
+    final lost = FirebaseFirestore.instance
         .collection("lost_items")
-        .where("userId", isEqualTo: uid)
+        .where("userId", isEqualTo: _roll)
         .snapshots();
 
-    final foundStream = FirebaseFirestore.instance
+    final found = FirebaseFirestore.instance
         .collection("found_items")
-        .where("userId", isEqualTo: uid)
+        .where("userId", isEqualTo: _roll)
         .snapshots();
 
     return StreamBuilder<List<QuerySnapshot>>(
-      stream: StreamZip([lostStream, foundStream]),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Padding(
-            padding: EdgeInsets.all(20),
-            child: CircularProgressIndicator(color: kPrimary),
-          );
+      stream: StreamZip([lost, found]),
+      builder: (_, snap) {
+        if (!snap.hasData) {
+          return const CircularProgressIndicator();
         }
 
-        final lostDocs = snapshot.data![0].docs;
-        final foundDocs = snapshot.data![1].docs;
+        final lostDocs = snap.data![0].docs;
+        final foundDocs = snap.data![1].docs;
+        final all = [...lostDocs, ...foundDocs];
 
-        final allPosts = [...lostDocs, ...foundDocs];
-
-        if (allPosts.isEmpty) {
-          return const Text(
-            "No posts yet.",
-            style: TextStyle(fontSize: 16),
+        if (all.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text("No posts yet"),
           );
         }
 
         return ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: allPosts.length,
-          itemBuilder: (context, i) {
-            final doc = allPosts[i];
+          itemCount: all.length,
+          itemBuilder: (_, i) {
+            final doc = all[i];
             final data = doc.data() as Map<String, dynamic>;
-
-            final bool isLost = lostDocs.contains(doc);
+            final isLost = lostDocs.contains(doc);
 
             return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               child: ListTile(
-                title: Text(data["item_name"] ?? "Item"),
+                title: Text(data["item_name"]),
                 subtitle: Text(isLost ? "Lost Item" : "Found Item"),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () async {
-                    await FirebaseFirestore.instance
-                        .collection(isLost ? "lost_items" : "found_items")
-                        .doc(doc.id)
-                        .delete();
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Post deleted")),
-                    );
-                  },
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit),
+                      onPressed: () => _editPost(doc.id, isLost, data),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () async {
+                        await FirebaseFirestore.instance
+                            .collection(isLost ? "lost_items" : "found_items")
+                            .doc(doc.id)
+                            .delete();
+                      },
+                    ),
+                  ],
                 ),
               ),
             );
@@ -170,26 +211,64 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  // -------------------- EDIT POST --------------------
+  Future<void> _editPost(
+      String id, bool isLost, Map<String, dynamic> data) async {
+    final name = TextEditingController(text: data["item_name"]);
+    final desc = TextEditingController(text: data["description"]);
+    final contact = TextEditingController(text: data["contact"]);
+
+    await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Edit Post"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: name, decoration: const InputDecoration(labelText: "Item Name")),
+            TextField(controller: desc, decoration: const InputDecoration(labelText: "Description")),
+            TextField(controller: contact, decoration: const InputDecoration(labelText: "Contact")),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          ElevatedButton(
+            onPressed: () async {
+              await FirebaseFirestore.instance
+                  .collection(isLost ? "lost_items" : "found_items")
+                  .doc(id)
+                  .update({
+                "item_name": name.text.trim(),
+                "description": desc.text.trim(),
+                "contact": contact.text.trim(),
+              });
+              Navigator.pop(context);
+            },
+            child: const Text("Save"),
+          )
+        ],
+      ),
+    );
+  }
+
+  // -------------------- UI --------------------
   @override
   Widget build(BuildContext context) {
     if (_loading) {
       return const Scaffold(
-        backgroundColor: kBackgroundLight,
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
-    if (_data == null) {
+    // NOT LOGGED IN
+    if (_profile == null) {
       return Scaffold(
         appBar: AppBar(
           backgroundColor: kPrimary,
-          leading: BackButton(color: Colors.white),
-          title:
-              const Text("My Profile", style: TextStyle(color: Colors.white)),
+          leading: const BackButton(color: Colors.white),
+          title: const Text("Profile", style: TextStyle(color: Colors.white)),
         ),
-        body: const Center(
-          child: Text("Please log in"),
-        ),
+        body: const Center(child: Text("Please login to view your profile")),
       );
     }
 
@@ -197,179 +276,53 @@ class _ProfilePageState extends State<ProfilePage> {
       backgroundColor: kBackgroundLight,
       appBar: AppBar(
         backgroundColor: kPrimary,
-        leading: BackButton(color: Colors.white),
-        title: const Text("My Profile",
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text("My Profile", style: TextStyle(color: Colors.white)),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit, color: Colors.white),
-            onPressed: _openEdit,
-          )
+          IconButton(icon: const Icon(Icons.edit), onPressed: _editProfile),
+          IconButton(icon: const Icon(Icons.logout), onPressed: _logout),
         ],
       ),
-
-      /// BODY
       body: SingleChildScrollView(
         child: Column(
           children: [
-            const SizedBox(height: 25),
-
-            /// 🔹 BLANK AVATAR CIRCLE
-            Container(
-              width: 140,
-              height: 140,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.pink.shade100,
-              ),
-            ),
-
             const SizedBox(height: 20),
-
-            Text(
-              _data!["name"],
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            Stack(
+              children: [
+                CircleAvatar(
+                  radius: 55,
+                  backgroundImage: (_profile!["photo"] ?? "").isEmpty
+                      ? null
+                      : NetworkImage(_profile!["photo"]),
+                  child: (_profile!["photo"] ?? "").isEmpty
+                      ? const Icon(Icons.person, size: 50)
+                      : null,
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: IconButton(
+                    icon: const Icon(Icons.camera_alt),
+                    onPressed: _pickProfilePic,
+                  ),
+                )
+              ],
             ),
-
             const SizedBox(height: 10),
-            Text("Department: ${_data!["department"]}"),
-            Text("Year: ${_data!["year"]}"),
-            Text("Roll Number: ${_data!["rollNumber"]}"),
-            Text("Contact: ${_data!["contact"]}"),
-
-            const SizedBox(height: 20),
-            Divider(color: Colors.grey.shade400),
-
-            const SizedBox(height: 10),
-            const Text(
-              "My Posts",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-
-            const SizedBox(height: 10),
-            _buildMyPosts(),
+            Text(_profile!["name"],
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text("Department: ${_profile!["department"]}"),
+            Text("Year: ${_profile!["year"]}"),
+            Text("Roll Number: $_roll"),
+            Text("Contact: ${_profile!["contact"]}"),
+            const Divider(),
+            const Text("My Posts",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            _myPosts(),
             const SizedBox(height: 40),
           ],
         ),
       ),
-    );
-  }
-}
-
-///////////////////////////////////////////////////////////////////////
-///                EDIT PROFILE (NO AVATAR)
-///////////////////////////////////////////////////////////////////////
-
-class EditProfileScreen extends StatefulWidget {
-  final String name, department, year, roll, contact;
-
-  const EditProfileScreen({
-    super.key,
-    required this.name,
-    required this.department,
-    required this.year,
-    required this.roll,
-    required this.contact,
-  });
-
-  @override
-  State<EditProfileScreen> createState() => _EditProfileScreenState();
-}
-
-class _EditProfileScreenState extends State<EditProfileScreen> {
-  late TextEditingController _name, _dept, _year, _roll, _contact;
-
-  @override
-  void initState() {
-    super.initState();
-    _name = TextEditingController(text: widget.name);
-    _dept = TextEditingController(text: widget.department);
-    _year = TextEditingController(text: widget.year);
-    _roll = TextEditingController(text: widget.roll);
-    _contact = TextEditingController(text: widget.contact);
-  }
-
-  void _save() {
-    Navigator.pop(context, {
-      "name": _name.text.trim(),
-      "department": _dept.text.trim(),
-      "year": _year.text.trim(),
-      "rollNumber": _roll.text.trim(),
-      "contact": _contact.text.trim(),
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: kBackgroundLight,
-      appBar: AppBar(
-        backgroundColor: kPrimary,
-        leading: BackButton(color: Colors.white),
-        title:
-            const Text("Edit Profile", style: TextStyle(color: Colors.white)),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            const SizedBox(height: 10),
-
-            /// 🔹 SAME BLANK AVATAR
-            Container(
-              width: 140,
-              height: 140,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.pink.shade100,
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            _field("Full Name", _name),
-            _field("Department", _dept),
-            _field("Year", _year),
-            _field("Roll Number", _roll),
-            _field("Contact", _contact),
-
-            const SizedBox(height: 20),
-
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: kPrimary),
-                onPressed: _save,
-                child: const Text(
-                  "Save Changes",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _field(String label, TextEditingController controller) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 6),
-        TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-        const SizedBox(height: 16),
-      ],
     );
   }
 }

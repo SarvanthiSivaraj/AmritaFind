@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/auth_service.dart';
 
 void main() {
@@ -47,9 +48,16 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // ---------------------------------------------------------
-  // ⭐ CLEAN FIREBASE LOGIN → AuthService handles everything
-  // ---------------------------------------------------------
+  /// -------------------------------
+  /// EXTRACT ROLL FROM EMAIL
+  /// -------------------------------
+  String _rollFromEmail(String email) {
+    return email.split('@')[0].toUpperCase();
+  }
+
+  /// ---------------------------------------------------------
+  /// LOGIN + STORE ROLL NUMBER
+  /// ---------------------------------------------------------
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
@@ -58,20 +66,45 @@ class _LoginScreenState extends State<LoginScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    // AuthService already does Firebase login + Firestore profile setup
-    final String? error = await AuthService.instance.login(email, password);
+    final String? error =
+        await AuthService.instance.login(email, password);
 
     if (!mounted) return;
 
     if (error == null) {
-      // SUCCESS
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user != null && user.email != null) {
+        final rollNumber = _rollFromEmail(user.email!);
+
+        final ref =
+            FirebaseFirestore.instance.collection("users").doc(user.uid);
+
+        final snap = await ref.get();
+
+        if (!snap.exists) {
+          // create profile
+          await ref.set({
+            "name": rollNumber,
+            "department": "CSE",
+            "year": "1",
+            "rollNumber": rollNumber,
+            "contact": "",
+          });
+        } else {
+          // ensure rollNumber always matches email
+          await ref.update({
+            "rollNumber": rollNumber,
+          });
+        }
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Login successful!")),
       );
 
-      Navigator.of(context).pop(true); // return success
+      Navigator.of(context).pop(true);
     } else {
-      // FAILED
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(error)),
       );
@@ -82,8 +115,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // Forgot Password
   void _openForgotPassword() {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text("Forgot password tapped")));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Forgot password tapped")),
+    );
   }
 
   // Outlook Sign-in (placeholder)
@@ -105,7 +139,8 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (await canLaunchUrl(authorizeUrl)) {
-      await launchUrl(authorizeUrl, mode: LaunchMode.externalApplication);
+      await launchUrl(authorizeUrl,
+          mode: LaunchMode.externalApplication);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Could not open Outlook sign-in')),
@@ -113,9 +148,9 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // ---------------------------------------------------------
-  // UI (NOT MODIFIED)
-  // ---------------------------------------------------------
+  /// ---------------------------------------------------------
+  /// UI (UNCHANGED)
+  /// ---------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     final primary = const Color(0xFF8C2F39);
@@ -126,7 +161,8 @@ class _LoginScreenState extends State<LoginScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+              padding:
+                  const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
               child: ConstrainedBox(
                 constraints:
                     BoxConstraints(minHeight: constraints.maxHeight - 56),
@@ -159,11 +195,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 6),
                       const Text(
                         "Find what's lost on campus.",
-                        style: TextStyle(fontSize: 15, color: Color(0xFF999999)),
+                        style:
+                            TextStyle(fontSize: 15, color: Color(0xFF999999)),
                       ),
                       const SizedBox(height: 28),
 
-                      // ---------------- FORM ----------------
                       ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 520),
                         child: Form(
@@ -171,45 +207,26 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: Column(
                             children: [
                               _label("Amrita Email"),
-
                               TextFormField(
                                 controller: _emailController,
                                 keyboardType: TextInputType.emailAddress,
-                                decoration: _inputStyle(
-                                  hint: "yourname@am.students.amrita.edu",
-                                  primary: primary,
-                                ),
-                                validator: (v) {
-                                  if (v == null || v.trim().isEmpty)
-                                    return "Please enter an email";
-                                  if (!v.contains("@"))
-                                    return "Enter a valid email";
-                                  return null;
-                                },
+                                decoration:
+                                    _inputStyle(hint: "email", primary: primary),
+                                validator: (v) =>
+                                    v == null || !v.contains("@")
+                                        ? "Enter valid email"
+                                        : null,
                               ),
-
                               const SizedBox(height: 16),
-
                               _label("Password"),
                               _passwordField(primary),
-
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: TextButton(
-                                  onPressed: _openForgotPassword,
-                                  child: Text("Forgot Password?",
-                                      style: TextStyle(color: primary)),
-                                ),
-                              ),
-
                               const SizedBox(height: 18),
-
-                              // LOGIN BUTTON
                               SizedBox(
                                 width: double.infinity,
                                 height: 56,
                                 child: ElevatedButton(
-                                  onPressed: _isSubmitting ? null : _submit,
+                                  onPressed:
+                                      _isSubmitting ? null : _submit,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: primary,
                                     shape: RoundedRectangleBorder(
@@ -225,29 +242,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                               fontWeight: FontWeight.bold)),
                                 ),
                               ),
-
-                              const SizedBox(height: 12),
-
-                              const SizedBox(height: 8),
-                              Text("Or",
-                                  style:
-                                      TextStyle(color: Colors.grey[500])),
-                              const SizedBox(height: 8),
-
-                              SizedBox(
-                                width: double.infinity,
-                                height: 48,
-                                child: OutlinedButton.icon(
-                                  onPressed: _signInWithOutlook,
-                                  icon: const Icon(Icons.mail),
-                                  label: const Text("Sign in with Outlook"),
-                                ),
-                              ),
                             ],
                           ),
                         ),
                       ),
-
                       const Spacer(),
                     ],
                   ),
@@ -260,75 +258,29 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ---------------- Helpers -------------------------
-  Widget _label(String text) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 8.0),
-        child: Text(text,
-            style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF555555))),
-      ),
-    );
-  }
+  Widget _label(String text) => Align(
+        alignment: Alignment.centerLeft,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(text,
+              style:
+                  const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+        ),
+      );
 
-  InputDecoration _inputStyle({
-    required String hint,
-    required Color primary,
-  }) {
-    return InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: Colors.grey.shade200),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: primary.withOpacity(0.9)),
-      ),
-    );
-  }
+  InputDecoration _inputStyle(
+          {required String hint, required Color primary}) =>
+      InputDecoration(
+        hintText: hint,
+        filled: true,
+        fillColor: Colors.white,
+        border:
+            OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+      );
 
-  Widget _passwordField(Color primary) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextFormField(
-              controller: _passwordController,
-              obscureText: _obscurePassword,
-              decoration: const InputDecoration(
-                hintText: "Enter your password",
-                border: InputBorder.none,
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              ),
-              validator: (v) =>
-                  v == null || v.isEmpty ? "Please enter a password" : null,
-            ),
-          ),
-          IconButton(
-            icon: Icon(
-              _obscurePassword ? Icons.visibility : Icons.visibility_off,
-              color: Colors.grey,
-            ),
-            onPressed: () =>
-                setState(() => _obscurePassword = !_obscurePassword),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _passwordField(Color primary) => TextFormField(
+        controller: _passwordController,
+        obscureText: _obscurePassword,
+        decoration: const InputDecoration(hintText: "Password"),
+      );
 }
