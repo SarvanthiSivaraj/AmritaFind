@@ -14,9 +14,7 @@ Future<void> main() async {
   await dotenv.load(fileName: ".env");
 
   // Initialize Firebase BEFORE running the app
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   runApp(const MyApp());
 }

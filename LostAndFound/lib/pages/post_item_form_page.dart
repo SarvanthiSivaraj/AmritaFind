@@ -49,9 +49,9 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
     if (images == null) return;
 
     if (images.length + _selectedImages.length > 5) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Max 5 images allowed")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Max 5 images allowed")));
       return;
     }
 
@@ -67,18 +67,14 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
     _uploadedUrls.clear();
 
     for (final img in _selectedImages) {
-      final fileName =
-          "${DateTime.now().millisecondsSinceEpoch}_${img.name}";
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child("lost_found_images/$fileName");
+      final fileName = "${DateTime.now().millisecondsSinceEpoch}_${img.name}";
+      final ref = FirebaseStorage.instance.ref().child(
+        "lost_found_images/$fileName",
+      );
 
       if (kIsWeb) {
         final Uint8List bytes = await img.readAsBytes();
-        await ref.putData(
-          bytes,
-          SettableMetadata(contentType: 'image/jpeg'),
-        );
+        await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
       } else {
         await ref.putFile(File(img.path));
       }
@@ -102,6 +98,7 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
 
     await FirebaseFirestore.instance.collection(collection).add({
       "userId": rollNumber, // ✅ IMPORTANT
+      "uid": user.uid, // ✅ EVEN MORE IMPORTANT for chat
       "email": user.email,
       "item_name": _itemNameController.text.trim(),
       "description": _descriptionController.text.trim(),
@@ -123,8 +120,10 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
       backgroundColor: kBackgroundLight,
       appBar: AppBar(
         backgroundColor: kPrimary,
-        title: const Text("Post Lost/Found",
-            style: TextStyle(color: Colors.white)),
+        title: const Text(
+          "Post Lost/Found",
+          style: TextStyle(color: Colors.white),
+        ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Form(
@@ -134,8 +133,10 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text("Upload Images (Max 5):",
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                "Upload Images (Max 5):",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 10),
 
               GestureDetector(
@@ -148,8 +149,11 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
                   ),
                   child: Column(
                     children: const [
-                      Icon(Icons.add_a_photo_outlined,
-                          size: 40, color: kPrimary),
+                      Icon(
+                        Icons.add_a_photo_outlined,
+                        size: 40,
+                        color: kPrimary,
+                      ),
                       SizedBox(height: 10),
                       Text("Tap to select images"),
                     ],
@@ -175,10 +179,11 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(12),
                               child: kIsWeb
-                                  ? Image.network(img.path,
-                                      fit: BoxFit.cover)
-                                  : Image.file(File(img.path),
-                                      fit: BoxFit.cover),
+                                  ? Image.network(img.path, fit: BoxFit.cover)
+                                  : Image.file(
+                                      File(img.path),
+                                      fit: BoxFit.cover,
+                                    ),
                             ),
                           ),
                           Positioned(
@@ -193,11 +198,14 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
                                     _selectedImages.removeAt(index);
                                   });
                                 },
-                                child: const Icon(Icons.close,
-                                    size: 16, color: Colors.white),
+                                child: const Icon(
+                                  Icons.close,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
-                          )
+                          ),
                         ],
                       );
                     },
@@ -212,10 +220,12 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
                     child: ElevatedButton(
                       onPressed: () => setState(() => _status = "Lost"),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            _status == "Lost" ? kPrimary : Colors.grey[300],
-                        foregroundColor:
-                            _status == "Lost" ? Colors.white : Colors.black,
+                        backgroundColor: _status == "Lost"
+                            ? kPrimary
+                            : Colors.grey[300],
+                        foregroundColor: _status == "Lost"
+                            ? Colors.white
+                            : Colors.black,
                       ),
                       child: const Text("Lost"),
                     ),
@@ -225,10 +235,12 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
                     child: ElevatedButton(
                       onPressed: () => setState(() => _status = "Found"),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            _status == "Found" ? kPrimary : Colors.grey[300],
-                        foregroundColor:
-                            _status == "Found" ? Colors.white : Colors.black,
+                        backgroundColor: _status == "Found"
+                            ? kPrimary
+                            : Colors.grey[300],
+                        foregroundColor: _status == "Found"
+                            ? Colors.white
+                            : Colors.black,
                       ),
                       child: const Text("Found"),
                     ),
@@ -270,15 +282,14 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
 
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                  content: Text("Item posted successfully!")),
+                                content: Text("Item posted successfully!"),
+                              ),
                             );
 
                             Navigator.pop(context);
                           } catch (e) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content:
-                                      Text("Submission failed: $e")),
+                              SnackBar(content: Text("Submission failed: $e")),
                             );
                           } finally {
                             if (mounted) {
@@ -288,8 +299,7 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
                         },
                   child: _isSubmitting
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text("Submit",
-                          style: TextStyle(fontSize: 16)),
+                      : const Text("Submit", style: TextStyle(fontSize: 16)),
                 ),
               ),
             ],
@@ -302,8 +312,11 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
   // ----------------------------------
   // HELPERS
   // ----------------------------------
-  Widget _buildField(String label, TextEditingController controller,
-      {int maxLines = 1}) {
+  Widget _buildField(
+    String label,
+    TextEditingController controller, {
+    int maxLines = 1,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextFormField(
@@ -312,8 +325,7 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
         validator: (v) => v == null || v.isEmpty ? "Required" : null,
         decoration: InputDecoration(
           labelText: label,
-          border:
-              OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
     );
@@ -326,8 +338,7 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
         value: _location,
         decoration: InputDecoration(
           labelText: "Location",
-          border:
-              OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         ),
         items: const [
           DropdownMenuItem(value: "AB1", child: Text("AB1")),

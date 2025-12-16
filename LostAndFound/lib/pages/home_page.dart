@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'post_item_form_page.dart';
 import 'chat_page.dart';
 import 'profile_page.dart';
+import 'chat_list_page.dart';
 import 'chat_bot_page.dart';
 import 'login_page.dart' as login;
 import '../services/auth_service.dart';
@@ -23,37 +24,42 @@ class _HomePageFeedState extends State<HomePageFeed> {
   String _searchText = "";
   DateTime? _selectedDate;
   String? _selectedLocation;
-  String _sortMode = "date"; 
-  bool _sortAscending = false; 
+  String _sortMode = "date";
+  bool _sortAscending = false;
 
   final List<String> _locations = [
-    "AB1","AB2","AB3","NB1","NB2","NB3","Auditorium","Lib","Canteen","Parking"
+    "AB1",
+    "AB2",
+    "AB3",
+    "NB1",
+    "NB2",
+    "NB3",
+    "Auditorium",
+    "Lib",
+    "Canteen",
+    "Parking",
   ];
 
   /// ------------------------------------------
   /// 🔥 COMBINED LIVE STREAM (lost + found)
   /// ------------------------------------------
   Stream<List<Map<String, dynamic>>> _itemsStream() {
-    final lostStream = FirebaseFirestore.instance.collection("lost_items").snapshots();
-    final foundStream = FirebaseFirestore.instance.collection("found_items").snapshots();
+    final lostStream = FirebaseFirestore.instance
+        .collection("lost_items")
+        .snapshots();
+    final foundStream = FirebaseFirestore.instance
+        .collection("found_items")
+        .snapshots();
 
     return lostStream.asyncMap((lost) async {
       final found = await foundStream.first;
 
       final lostList = lost.docs.map((d) {
-        return {
-          "id": d.id,
-          ...d.data(),
-          "source": "LOST",
-        };
+        return {"id": d.id, ...d.data(), "source": "LOST"};
       }).toList();
 
       final foundList = found.docs.map((d) {
-        return {
-          "id": d.id,
-          ...d.data(),
-          "source": "FOUND",
-        };
+        return {"id": d.id, ...d.data(), "source": "FOUND"};
       }).toList();
 
       return [...lostList, ...foundList];
@@ -67,13 +73,19 @@ class _HomePageFeedState extends State<HomePageFeed> {
     List<Map<String, dynamic>> out = List.from(items);
 
     if (_statusFilter != "all") {
-      out = out.where((e) => e["source"].toString().toLowerCase() == _statusFilter).toList();
+      out = out
+          .where((e) => e["source"].toString().toLowerCase() == _statusFilter)
+          .toList();
     }
 
     if (_selectedLocation != null) {
-      out = out.where((e) =>
-          e["location"]?.toString().toUpperCase() ==
-          _selectedLocation!.toUpperCase()).toList();
+      out = out
+          .where(
+            (e) =>
+                e["location"]?.toString().toUpperCase() ==
+                _selectedLocation!.toUpperCase(),
+          )
+          .toList();
     }
 
     if (_selectedDate != null) {
@@ -82,8 +94,8 @@ class _HomePageFeedState extends State<HomePageFeed> {
         if (ts == null) return false;
         final dt = (ts as Timestamp).toDate();
         return dt.year == _selectedDate!.year &&
-               dt.month == _selectedDate!.month &&
-               dt.day == _selectedDate!.day;
+            dt.month == _selectedDate!.month &&
+            dt.day == _selectedDate!.day;
       }).toList();
     }
 
@@ -104,9 +116,7 @@ class _HomePageFeedState extends State<HomePageFeed> {
       } else {
         final la = a["location"] ?? "";
         final lb = b["location"] ?? "";
-        return _sortAscending 
-            ? la.compareTo(lb)
-            : lb.compareTo(la);
+        return _sortAscending ? la.compareTo(lb) : lb.compareTo(la);
       }
     });
 
@@ -153,20 +163,36 @@ class _HomePageFeedState extends State<HomePageFeed> {
           children: const [
             Icon(Icons.school, color: kPrimary, size: 28),
             SizedBox(width: 8),
-            Text("Lost & Found",
-                style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            Text(
+              "Lost & Found",
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.chat_bubble_outline, color: kPrimary),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ChatListPage()),
+            ),
+          ),
+          IconButton(
             icon: const Icon(Icons.chat_bubble, color: kPrimary),
-            onPressed: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const ChatbotScreen())),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ChatbotScreen()),
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.person, color: kPrimary),
-            onPressed: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const ProfilePage())),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProfilePage()),
+            ),
           ),
         ],
       ),
@@ -178,17 +204,20 @@ class _HomePageFeedState extends State<HomePageFeed> {
         onPressed: () async {
           if (!AuthService.isLoggedIn) {
             final ok = await Navigator.push(
-                context, MaterialPageRoute(builder: (_) => const login.LoginScreen()));
+              context,
+              MaterialPageRoute(builder: (_) => const login.LoginScreen()),
+            );
             if (ok != true) return;
           }
-          Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const PostItemFormPage()));
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PostItemFormPage()),
+          );
         },
       ),
 
       body: Column(
         children: [
-
           // SEARCH BAR
           Container(
             margin: const EdgeInsets.all(12),
@@ -210,7 +239,7 @@ class _HomePageFeedState extends State<HomePageFeed> {
                       border: InputBorder.none,
                     ),
                   ),
-                )
+                ),
               ],
             ),
           ),
@@ -233,8 +262,11 @@ class _HomePageFeedState extends State<HomePageFeed> {
 
                 if (data.isEmpty) {
                   return const Center(
-                      child: Text("No items found",
-                          style: TextStyle(fontSize: 16, color: Colors.grey)));
+                    child: Text(
+                      "No items found",
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                  );
                 }
 
                 return ListView.builder(
@@ -278,11 +310,15 @@ class _HomePageFeedState extends State<HomePageFeed> {
                 title: const Text("Select Location"),
                 children: [
                   SimpleDialogOption(
-                      child: const Text("All"), onPressed: () => Navigator.pop(context, null)),
-                  ..._locations.map((l) => SimpleDialogOption(
-                        child: Text(l),
-                        onPressed: () => Navigator.pop(context, l),
-                      )),
+                    child: const Text("All"),
+                    onPressed: () => Navigator.pop(context, null),
+                  ),
+                  ..._locations.map(
+                    (l) => SimpleDialogOption(
+                      child: Text(l),
+                      onPressed: () => Navigator.pop(context, l),
+                    ),
+                  ),
                 ],
               ),
             );
@@ -319,14 +355,18 @@ class _HomePageFeedState extends State<HomePageFeed> {
   /// ITEM CARD UI
   /// ------------------------------------------
   Widget _itemCard(Map<String, dynamic> item) {
-    final img = item["imageUrl"];
+    // ✅ FIX: Read from the 'imageUrls' list, not 'imageUrl'
+    final images = item["imageUrls"] as List?;
+    final firstImage = (images != null && images.isNotEmpty)
+        ? images.first.toString()
+        : null;
+
     final dt = (item["timestamp"] as Timestamp?)?.toDate();
     final dateStr = dt != null ? dt.toString().substring(0, 16) : "";
 
     // 🔥 FIX: ITEM NAME (support both formats)
-    final String title = item["item_name"] 
-        ?? item["itemName"] 
-        ?? "Unnamed Item";
+    final String title =
+        item["item_name"] ?? item["itemName"] ?? "Unnamed Item";
 
     return Container(
       margin: const EdgeInsets.all(12),
@@ -339,11 +379,17 @@ class _HomePageFeedState extends State<HomePageFeed> {
       ),
       child: Column(
         children: [
-          if (img != null && img.toString().isNotEmpty)
+          if (firstImage != null)
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              child: Image.network(img,
-                height: 180, width: double.infinity, fit: BoxFit.cover),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
+              child: Image.network(
+                firstImage,
+                height: 180,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
             ),
 
           Padding(
@@ -351,7 +397,6 @@ class _HomePageFeedState extends State<HomePageFeed> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 /// TITLE + STATUS
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -360,12 +405,17 @@ class _HomePageFeedState extends State<HomePageFeed> {
                       child: Text(
                         title,
                         style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
 
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: item["source"] == "LOST"
                             ? Colors.red.shade100
@@ -410,10 +460,42 @@ class _HomePageFeedState extends State<HomePageFeed> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
+                    // ✅ FIX: Pass required data to ChatPage
                     onPressed: () {
+                      // Prevent user from chatting with themselves
+                      if (AuthService.currentUser?.uid == item['uid']) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("This is your own post."),
+                          ),
+                        );
+                        return;
+                      }
+
+                      // ✅ FIX: Add a null-check for the receiver's UID.
+                      // This prevents crashes if old data in Firestore is missing the 'uid' field.
+                      final receiverUid = item['uid'];
+                      if (receiverUid == null ||
+                          receiverUid.toString().isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              "Cannot start chat. Poster information is missing.",
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+
+                      // Navigate to chat, passing the required IDs and context
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const ChatPage()),
+                        MaterialPageRoute(
+                          builder: (_) => ChatPage(
+                            receiverId: receiverUid.toString(),
+                            itemContext: 'Regarding: $title',
+                          ),
+                        ),
                       );
                     },
                     style: ElevatedButton.styleFrom(
