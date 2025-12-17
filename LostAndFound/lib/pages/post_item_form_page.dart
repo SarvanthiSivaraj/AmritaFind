@@ -1,17 +1,27 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart'; // kIsWeb
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import 'home_page.dart';
+const Color kPrimary = Color(0xFF8C2F39);
+const Color kBackgroundLight = Color(0xFFFAF9F6);
 
 class PostItemFormPage extends StatefulWidget {
-  const PostItemFormPage({super.key});
+  final String? docId;
+  final String? collection;
+  final Map<String, dynamic>? existingData;
+
+  const PostItemFormPage({
+    super.key,
+    this.docId,
+    this.collection,
+    this.existingData,
+  });
 
   @override
   State<PostItemFormPage> createState() => _PostItemFormPageState();
@@ -19,6 +29,8 @@ class PostItemFormPage extends StatefulWidget {
 
 class _PostItemFormPageState extends State<PostItemFormPage> {
   final _formKey = GlobalKey<FormState>();
+
+  bool get isEdit => widget.docId != null;
 
   String _status = 'Lost';
   String? _location;
@@ -34,24 +46,43 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
 
   bool _isSubmitting = false;
 
-  // ----------------------------------
-  // EXTRACT USER ID FROM EMAIL
-  // ----------------------------------
+  // ---------------- INIT ----------------
+  @override
+  void initState() {
+    super.initState();
+
+    if (isEdit && widget.existingData != null) {
+      final data = widget.existingData!;
+
+      _status = data["status"] ?? "Lost";
+      _location = data["location"];
+      _itemNameController.text = data["item_name"] ?? "";
+      _descriptionController.text = data["description"] ?? "";
+      _contactController.text = data["contact"] ?? "";
+      _secretQuestionController.text =
+          data["secret_question"] ?? "";
+      _uploadedUrls =
+          List<String>.from(data["imageUrls"] ?? []);
+    }
+  }
+
+  // ---------------- USER ID ----------------
   String _extractUserIdFromEmail(String email) {
     return email.split('@')[0].toUpperCase();
   }
 
-  // ----------------------------------
-  // PICK IMAGES
-  // ----------------------------------
+  // ---------------- PICK IMAGES ----------------
   Future<void> _pickImages() async {
-    final List<XFile>? images = await _picker.pickMultiImage();
+    final images = await _picker.pickMultiImage();
     if (images == null) return;
 
-    if (images.length + _selectedImages.length > 5) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Max 5 images allowed")));
+    if (images.length +
+            _selectedImages.length +
+            _uploadedUrls.length >
+        5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Max 5 images allowed")),
+      );
       return;
     }
 
@@ -60,21 +91,17 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
     });
   }
 
-  // ----------------------------------
-  // UPLOAD IMAGES (WEB + MOBILE SAFE)
-  // ----------------------------------
+  // ---------------- UPLOAD NEW IMAGES ----------------
   Future<void> _uploadImages() async {
-    _uploadedUrls.clear();
-
     for (final img in _selectedImages) {
-      final fileName = "${DateTime.now().millisecondsSinceEpoch}_${img.name}";
-      final ref = FirebaseStorage.instance.ref().child(
-        "lost_found_images/$fileName",
-      );
+      final fileName =
+          "${DateTime.now().millisecondsSinceEpoch}_${img.name}";
+      final ref = FirebaseStorage.instance
+          .ref("lost_found_images/$fileName");
 
       if (kIsWeb) {
         final Uint8List bytes = await img.readAsBytes();
-        await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
+        await ref.putData(bytes);
       } else {
         await ref.putFile(File(img.path));
       }
@@ -84,22 +111,16 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
     }
   }
 
-  // ----------------------------------
-  // SAVE TO FIRESTORE (CORRECT userId)
-  // ----------------------------------
+  // ---------------- SAVE / UPDATE ----------------
   Future<void> _saveToFirestore() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null || user.email == null) {
-      throw Exception("User not logged in");
-    }
+    if (user == null || user.email == null) return;
 
     final rollNumber = _extractUserIdFromEmail(user.email!);
-    final collection = _status == "Lost" ? "lost_items" : "found_items";
+    final collection = widget.collection ??
+        (_status == "Lost" ? "lost_items" : "found_items");
 
-    await FirebaseFirestore.instance.collection(collection).add({
-      "userId": rollNumber, // ✅ IMPORTANT
-      "uid": user.uid, // ✅ EVEN MORE IMPORTANT for chat
-      "email": user.email,
+    final data = {
       "item_name": _itemNameController.text.trim(),
       "description": _descriptionController.text.trim(),
       "location": _location ?? "",
@@ -107,22 +128,34 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
       "secret_question": _secretQuestionController.text.trim(),
       "status": _status,
       "imageUrls": _uploadedUrls,
-      "timestamp": FieldValue.serverTimestamp(),
-    });
+    };
+
+    if (isEdit) {
+      await FirebaseFirestore.instance
+          .collection(collection)
+          .doc(widget.docId)
+          .update(data);
+    } else {
+      await FirebaseFirestore.instance.collection(collection).add({
+        ...data,
+        "userId": rollNumber,
+        "uid": user.uid,
+        "email": user.email,
+        "timestamp": FieldValue.serverTimestamp(),
+      });
+    }
   }
 
-  // ----------------------------------
-  // UI
-  // ----------------------------------
+  // ---------------- UI ----------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBackgroundLight,
       appBar: AppBar(
         backgroundColor: kPrimary,
-        title: const Text(
-          "Post Lost/Found",
-          style: TextStyle(color: Colors.white),
+        title: Text(
+          isEdit ? "Edit Post" : "Post Lost / Found",
+          style: const TextStyle(color: Colors.white),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -133,10 +166,8 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                "Upload Images (Max 5):",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+              const Text("Upload Images (Max 5)",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
 
               GestureDetector(
@@ -149,11 +180,8 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
                   ),
                   child: Column(
                     children: const [
-                      Icon(
-                        Icons.add_a_photo_outlined,
-                        size: 40,
-                        color: kPrimary,
-                      ),
+                      Icon(Icons.add_a_photo_outlined,
+                          size: 40, color: kPrimary),
                       SizedBox(height: 10),
                       Text("Tap to select images"),
                     ],
@@ -163,52 +191,34 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
 
               const SizedBox(height: 10),
 
-              if (_selectedImages.isNotEmpty)
+              if (_uploadedUrls.isNotEmpty ||
+                  _selectedImages.isNotEmpty)
                 SizedBox(
                   height: 120,
-                  child: ListView.builder(
+                  child: ListView(
                     scrollDirection: Axis.horizontal,
-                    itemCount: _selectedImages.length,
-                    itemBuilder: (context, index) {
-                      final img = _selectedImages[index];
-                      return Stack(
-                        children: [
-                          Container(
-                            margin: const EdgeInsets.only(right: 10),
-                            width: 120,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: kIsWeb
-                                  ? Image.network(img.path, fit: BoxFit.cover)
-                                  : Image.file(
-                                      File(img.path),
-                                      fit: BoxFit.cover,
-                                    ),
-                            ),
-                          ),
-                          Positioned(
-                            right: 0,
-                            top: 0,
-                            child: CircleAvatar(
-                              radius: 14,
-                              backgroundColor: Colors.red,
-                              child: InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    _selectedImages.removeAt(index);
-                                  });
-                                },
-                                child: const Icon(
-                                  Icons.close,
-                                  size: 16,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
+                    children: [
+                      ..._uploadedUrls.map(
+                        (url) => _imageTile(
+                          Image.network(url, fit: BoxFit.cover),
+                          onRemove: () {
+                            setState(() => _uploadedUrls.remove(url));
+                          },
+                        ),
+                      ),
+                      ..._selectedImages.map(
+                        (img) => _imageTile(
+                          kIsWeb
+                              ? Image.network(img.path,
+                                  fit: BoxFit.cover)
+                              : Image.file(File(img.path),
+                                  fit: BoxFit.cover),
+                          onRemove: () {
+                            setState(() => _selectedImages.remove(img));
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ),
 
@@ -216,45 +226,21 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
 
               Row(
                 children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => setState(() => _status = "Lost"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _status == "Lost"
-                            ? kPrimary
-                            : Colors.grey[300],
-                        foregroundColor: _status == "Lost"
-                            ? Colors.white
-                            : Colors.black,
-                      ),
-                      child: const Text("Lost"),
-                    ),
-                  ),
+                  _statusButton("Lost"),
                   const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => setState(() => _status = "Found"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _status == "Found"
-                            ? kPrimary
-                            : Colors.grey[300],
-                        foregroundColor: _status == "Found"
-                            ? Colors.white
-                            : Colors.black,
-                      ),
-                      child: const Text("Found"),
-                    ),
-                  ),
+                  _statusButton("Found"),
                 ],
               ),
 
               const SizedBox(height: 20),
 
               _buildField("Item Name", _itemNameController),
-              _buildField("Description", _descriptionController, maxLines: 3),
+              _buildField("Description", _descriptionController,
+                  maxLines: 3),
               _buildLocationDropdown(),
               _buildField("Contact Number", _contactController),
-              _buildField("Secret Question", _secretQuestionController),
+              _buildField(
+                  "Secret Question", _secretQuestionController),
 
               const SizedBox(height: 30),
 
@@ -263,7 +249,8 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: kPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 16),
                   ),
                   onPressed: _isSubmitting
                       ? null
@@ -276,21 +263,20 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
                             if (_selectedImages.isNotEmpty) {
                               await _uploadImages();
                             }
+
                             await _saveToFirestore();
 
                             if (!mounted) return;
 
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("Item posted successfully!"),
+                              SnackBar(
+                                content: Text(isEdit
+                                    ? "Post updated successfully!"
+                                    : "Item posted successfully!"),
                               ),
                             );
 
                             Navigator.pop(context);
-                          } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text("Submission failed: $e")),
-                            );
                           } finally {
                             if (mounted) {
                               setState(() => _isSubmitting = false);
@@ -298,8 +284,13 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
                           }
                         },
                   child: _isSubmitting
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text("Submit", style: TextStyle(fontSize: 16)),
+                      ? const CircularProgressIndicator(
+                          color: Colors.white)
+                      : Text(
+                          isEdit ? "Update" : "Submit",
+                          style:
+                              const TextStyle(fontSize: 16),
+                        ),
                 ),
               ),
             ],
@@ -309,23 +300,67 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
     );
   }
 
-  // ----------------------------------
-  // HELPERS
-  // ----------------------------------
-  Widget _buildField(
-    String label,
-    TextEditingController controller, {
-    int maxLines = 1,
-  }) {
+  // ---------------- HELPERS ----------------
+  Widget _imageTile(Image img,
+      {required VoidCallback onRemove}) {
+    return Stack(
+      children: [
+        Container(
+          margin: const EdgeInsets.only(right: 10),
+          width: 120,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: img,
+          ),
+        ),
+        Positioned(
+          right: 0,
+          top: 0,
+          child: CircleAvatar(
+            radius: 14,
+            backgroundColor: Colors.red,
+            child: InkWell(
+              onTap: onRemove,
+              child: const Icon(Icons.close,
+                  size: 16, color: Colors.white),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _statusButton(String label) {
+    return Expanded(
+      child: ElevatedButton(
+        onPressed:
+            isEdit ? null : () => setState(() => _status = label),
+        style: ElevatedButton.styleFrom(
+          backgroundColor:
+              _status == label ? kPrimary : Colors.grey[300],
+          foregroundColor:
+              _status == label ? Colors.white : Colors.black,
+        ),
+        child: Text(label),
+      ),
+    );
+  }
+
+  Widget _buildField(String label,
+      TextEditingController controller,
+      {int maxLines = 1}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextFormField(
         controller: controller,
         maxLines: maxLines,
-        validator: (v) => v == null || v.isEmpty ? "Required" : null,
+        validator: (v) =>
+            v == null || v.isEmpty ? "Required" : null,
         decoration: InputDecoration(
           labelText: label,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       ),
     );
@@ -338,7 +373,9 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
         value: _location,
         decoration: InputDecoration(
           labelText: "Location",
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
         items: const [
           DropdownMenuItem(value: "AB1", child: Text("AB1")),
