@@ -163,11 +163,15 @@ class _HomePageFeedState extends State<HomePageFeed> {
           children: const [
             Icon(Icons.school, color: kPrimary, size: 28),
             SizedBox(width: 8),
-            Text(
-              "Lost & Found",
-              style: TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
+            Expanded(
+              child: Text(
+                "Lost & Found",
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             ),
           ],
