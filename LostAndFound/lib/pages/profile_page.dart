@@ -12,6 +12,7 @@ import 'package:async/async.dart';
 import 'login_page.dart';
 import 'edit_profile_page.dart';
 import 'post_item_form_page.dart';
+import 'onboarding_screen.dart';
 
 const Color kPrimary = Color(0xFFBF0C4F);
 const Color kSecondary = Color(0xFFD81B60);
@@ -358,6 +359,20 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const SizedBox(height: 12),
                   _myPosts(),
+
+                  const SizedBox(height: 12),
+                  Card(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: ListTile(
+                      leading: const Icon(Icons.help_outline, color: kPrimary),
+                      title: const Text('How to use the app'),
+                      subtitle: const Text('Onboarding and walkthrough'),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => OnboardingScreen()),
+                      ),
+                    ),
+                  ),
+
                   const SizedBox(height: 100),
                 ],
               ),

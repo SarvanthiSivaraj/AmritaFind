@@ -4,7 +4,9 @@ import 'package:lostandfound/pages/chat_bot_page.dart';
 import 'package:lostandfound/pages/chat_list_page.dart';
 import 'package:lostandfound/pages/profile_page.dart';
 import 'package:lostandfound/pages/login_page.dart' as login;
+import 'package:lostandfound/pages/onboarding_screen.dart';
 import 'package:lostandfound/services/auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -22,6 +24,28 @@ class _AppShellState extends State<AppShell> {
     ChatListPage(),
     ProfilePage(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _maybeShowOnboardingOnFirstLaunch();
+  }
+
+  Future<void> _maybeShowOnboardingOnFirstLaunch() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final shown = prefs.getBool('onboarding_shown_on_launch') ?? false;
+      if (!shown) {
+        await prefs.setBool('onboarding_shown_on_launch', true);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          Navigator.of(context).push(MaterialPageRoute(builder: (_) => OnboardingScreen()));
+        });
+      }
+    } catch (_) {
+      // ignore
+    }
+  }
 
   void _onTap(int index) async {
     // Chats (2) and Profile (3) require login
