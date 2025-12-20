@@ -8,7 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-const Color kPrimary = Color(0xFF8C2F39);
+const Color kPrimary = Color(0xFFBF0C4F);
 const Color kBackgroundLight = Color(0xFFFAF9F6);
 
 class PostItemFormPage extends StatefulWidget {
@@ -384,7 +384,9 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
           DropdownMenuItem(value: "AB3", child: Text("AB3")),
           DropdownMenuItem(value: "Hostel", child: Text("Hostel")),
           DropdownMenuItem(value: "Parking", child: Text("Parking")),
-          DropdownMenuItem(value: "Other", child: Text("Other")),
+          DropdownMenuItem(value: "Auditorium", child: Text("Auditorium")),
+          DropdownMenuItem(value: "Lib", child: Text("Lib")),
+          DropdownMenuItem(value: "Canteen", child: Text("Canteen")),
         ],
         onChanged: (v) => setState(() => _location = v),
       ),

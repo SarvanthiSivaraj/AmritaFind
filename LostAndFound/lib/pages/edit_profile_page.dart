@@ -8,7 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 
-const Color kPrimary = Color(0xFF8C2F39);
+const Color kPrimary = Color(0xFFBF0C4F);
 
 class EditProfilePage extends StatefulWidget {
   final Map<String, dynamic> profile;
@@ -58,10 +58,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
             ),
             if (photoUrl.isNotEmpty)
               ListTile(
-                leading:
-                    const Icon(Icons.delete, color: Colors.red),
-                title: const Text("Remove Photo",
-                    style: TextStyle(color: Colors.red)),
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: const Text(
+                  "Remove Photo",
+                  style: TextStyle(color: Colors.red),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _removePhoto();
@@ -84,8 +85,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     if (img == null) return;
 
     final user = FirebaseAuth.instance.currentUser!;
-    final ref =
-        FirebaseStorage.instance.ref("profile_pics/${user.uid}.jpg");
+    final ref = FirebaseStorage.instance.ref("profile_pics/${user.uid}.jpg");
 
     if (kIsWeb) {
       Uint8List bytes = await img.readAsBytes();
@@ -100,8 +100,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   Future<void> _removePhoto() async {
     final user = FirebaseAuth.instance.currentUser!;
-    final ref =
-        FirebaseStorage.instance.ref("profile_pics/${user.uid}.jpg");
+    final ref = FirebaseStorage.instance.ref("profile_pics/${user.uid}.jpg");
     try {
       await ref.delete();
     } catch (_) {}
@@ -111,17 +110,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Future<void> _save() async {
     if (!RegExp(r'^[1-5]$').hasMatch(year.text) ||
         !RegExp(r'^[0-9]{10}$').hasMatch(phone.text)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Invalid year or phone")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Invalid year or phone")));
       return;
     }
 
     final user = FirebaseAuth.instance.currentUser!;
-    await FirebaseFirestore.instance
-        .collection("users")
-        .doc(user.uid)
-        .update({
+    await FirebaseFirestore.instance.collection("users").doc(user.uid).update({
       "name": name.text.trim(),
       "department": dept.text.trim(),
       "year": year.text.trim(),
@@ -137,8 +133,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: kPrimary,
-        title:
-            const Text("Edit Profile", style: TextStyle(color: Colors.white)),
+        title: const Text(
+          "Edit Profile",
+          style: TextStyle(color: Colors.white),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -150,11 +148,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 CircleAvatar(
                   radius: 55,
                   backgroundColor: Colors.pink.shade100,
-                  backgroundImage:
-                      photoUrl.isEmpty ? null : NetworkImage(photoUrl),
+                  backgroundImage: photoUrl.isEmpty
+                      ? null
+                      : NetworkImage(photoUrl),
                   child: photoUrl.isEmpty
-                      ? const Icon(Icons.person,
-                          size: 50, color: kPrimary)
+                      ? const Icon(Icons.person, size: 50, color: kPrimary)
                       : null,
                 ),
                 Positioned(
@@ -165,12 +163,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     backgroundColor: kPrimary,
                     child: IconButton(
                       padding: EdgeInsets.zero,
-                      icon: const Icon(Icons.edit,
-                          size: 16, color: Colors.white),
+                      icon: const Icon(
+                        Icons.edit,
+                        size: 16,
+                        color: Colors.white,
+                      ),
                       onPressed: _showImageOptions,
                     ),
                   ),
-                )
+                ),
               ],
             ),
 
@@ -185,30 +186,30 @@ class _EditProfilePageState extends State<EditProfilePage> {
               width: double.infinity,
               height: 48,
               child: ElevatedButton(
-                style:
-                    ElevatedButton.styleFrom(backgroundColor: kPrimary),
+                style: ElevatedButton.styleFrom(backgroundColor: kPrimary),
                 onPressed: _save,
                 child: const Text("Save"),
               ),
-            )
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _field(String label, TextEditingController c,
-      {bool isNumber = false}) {
+  Widget _field(
+    String label,
+    TextEditingController c, {
+    bool isNumber = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextField(
         controller: c,
-        keyboardType:
-            isNumber ? TextInputType.number : TextInputType.text,
+        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
         decoration: InputDecoration(
           labelText: label,
-          border:
-              OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
     );

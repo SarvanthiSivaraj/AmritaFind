@@ -17,8 +17,8 @@ class LostFoundApp extends StatelessWidget {
       title: 'Lost & Found – Amrita Campus',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primaryColor: const Color(0xFF8C2F39),
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF8C2F39)),
+        primaryColor: const Color(0xFFBF0C4F),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFBF0C4F)),
         fontFamily: 'Lexend',
         useMaterial3: true,
       ),
@@ -66,8 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    final String? error =
-        await AuthService.instance.login(email, password);
+    final String? error = await AuthService.instance.login(email, password);
 
     if (!mounted) return;
 
@@ -77,8 +76,9 @@ class _LoginScreenState extends State<LoginScreen> {
       if (user != null && user.email != null) {
         final rollNumber = _rollFromEmail(user.email!);
 
-        final ref =
-            FirebaseFirestore.instance.collection("users").doc(user.uid);
+        final ref = FirebaseFirestore.instance
+            .collection("users")
+            .doc(user.uid);
 
         final snap = await ref.get();
 
@@ -93,21 +93,19 @@ class _LoginScreenState extends State<LoginScreen> {
           });
         } else {
           // ensure rollNumber always matches email
-          await ref.update({
-            "rollNumber": rollNumber,
-          });
+          await ref.update({"rollNumber": rollNumber});
         }
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Login successful!")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Login successful!")));
 
       Navigator.of(context).pop(true);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
     }
 
     if (mounted) setState(() => _isSubmitting = false);
@@ -115,9 +113,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // Forgot Password
   void _openForgotPassword() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Forgot password tapped")),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text("Forgot password tapped")));
   }
 
   // Outlook Sign-in (placeholder)
@@ -139,8 +137,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (await canLaunchUrl(authorizeUrl)) {
-      await launchUrl(authorizeUrl,
-          mode: LaunchMode.externalApplication);
+      await launchUrl(authorizeUrl, mode: LaunchMode.externalApplication);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Could not open Outlook sign-in')),
@@ -153,7 +150,7 @@ class _LoginScreenState extends State<LoginScreen> {
   /// ---------------------------------------------------------
   @override
   Widget build(BuildContext context) {
-    final primary = const Color(0xFF8C2F39);
+    final primary = const Color(0xFFBF0C4F);
 
     return Scaffold(
       backgroundColor: const Color(0xFFFDFBF7),
@@ -161,11 +158,11 @@ class _LoginScreenState extends State<LoginScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
-              padding:
-                  const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+              padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
               child: ConstrainedBox(
-                constraints:
-                    BoxConstraints(minHeight: constraints.maxHeight - 56),
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight - 56,
+                ),
                 child: IntrinsicHeight(
                   child: Column(
                     children: [
@@ -188,15 +185,18 @@ class _LoginScreenState extends State<LoginScreen> {
                       const Text(
                         "Welcome Back",
                         style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF333333)),
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF333333),
+                        ),
                       ),
                       const SizedBox(height: 6),
                       const Text(
                         "Find what's lost on campus.",
-                        style:
-                            TextStyle(fontSize: 15, color: Color(0xFF999999)),
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Color(0xFF999999),
+                        ),
                       ),
                       const SizedBox(height: 28),
 
@@ -210,12 +210,13 @@ class _LoginScreenState extends State<LoginScreen> {
                               TextFormField(
                                 controller: _emailController,
                                 keyboardType: TextInputType.emailAddress,
-                                decoration:
-                                    _inputStyle(hint: "email", primary: primary),
-                                validator: (v) =>
-                                    v == null || !v.contains("@")
-                                        ? "Enter valid email"
-                                        : null,
+                                decoration: _inputStyle(
+                                  hint: "email",
+                                  primary: primary,
+                                ),
+                                validator: (v) => v == null || !v.contains("@")
+                                    ? "Enter valid email"
+                                    : null,
                               ),
                               const SizedBox(height: 16),
                               _label("Password"),
@@ -225,21 +226,24 @@ class _LoginScreenState extends State<LoginScreen> {
                                 width: double.infinity,
                                 height: 56,
                                 child: ElevatedButton(
-                                  onPressed:
-                                      _isSubmitting ? null : _submit,
+                                  onPressed: _isSubmitting ? null : _submit,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: primary,
                                     shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(14)),
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
                                   ),
                                   child: _isSubmitting
                                       ? const CircularProgressIndicator(
-                                          color: Colors.white)
-                                      : const Text("Login",
+                                          color: Colors.white,
+                                        )
+                                      : const Text(
+                                          "Login",
                                           style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold)),
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
                                 ),
                               ),
                             ],
@@ -259,28 +263,27 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _label(String text) => Align(
-        alignment: Alignment.centerLeft,
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Text(text,
-              style:
-                  const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-        ),
-      );
+    alignment: Alignment.centerLeft,
+    child: Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+      ),
+    ),
+  );
 
-  InputDecoration _inputStyle(
-          {required String hint, required Color primary}) =>
+  InputDecoration _inputStyle({required String hint, required Color primary}) =>
       InputDecoration(
         hintText: hint,
         filled: true,
         fillColor: Colors.white,
-        border:
-            OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
       );
 
   Widget _passwordField(Color primary) => TextFormField(
-        controller: _passwordController,
-        obscureText: _obscurePassword,
-        decoration: const InputDecoration(hintText: "Password"),
-      );
+    controller: _passwordController,
+    obscureText: _obscurePassword,
+    decoration: const InputDecoration(hintText: "Password"),
+  );
 }

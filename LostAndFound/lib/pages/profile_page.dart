@@ -13,7 +13,7 @@ import 'login_page.dart';
 import 'edit_profile_page.dart';
 import 'post_item_form_page.dart';
 
-const Color kPrimary = Color(0xFF8C2F39);
+const Color kPrimary = Color(0xFFBF0C4F);
 const Color kBackgroundLight = Color(0xFFFAF9F6);
 
 class ProfilePage extends StatefulWidget {

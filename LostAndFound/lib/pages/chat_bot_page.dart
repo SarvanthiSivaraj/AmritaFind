@@ -204,7 +204,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                               ),
                               decoration: BoxDecoration(
                                 color: message.isUser
-                                    ? const Color(0xFF8C2F39)
+                                    ? const Color(0xFFBF0C4F)
                                     : Colors.white,
                                 borderRadius: BorderRadius.only(
                                   topLeft: const Radius.circular(20),
@@ -267,7 +267,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                             const SizedBox(width: 12),
                             const CircleAvatar(
                               radius: 20,
-                              backgroundColor: Color(0xFF8C2F39),
+                              backgroundColor: Color(0xFFBF0C4F),
                               child: Icon(
                                 Icons.person,
                                 color: Colors.white,
@@ -285,80 +285,83 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           ),
           // Input Area
           // Input Area
-Container(
-  decoration: BoxDecoration(
-    color: const Color(0xFFF8F6F6),
-    boxShadow: [
-      BoxShadow(
-        color: Colors.black.withOpacity(0.05),
-        blurRadius: 8,
-        offset: const Offset(0, -2),
-      ),
-    ],
-  ),
-  padding: const EdgeInsets.all(16),
-  child: Row(
-    crossAxisAlignment: CrossAxisAlignment.end,
-    children: [
-      Expanded(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            minHeight: 48,
-            maxHeight: 160, // ❗ TextField can grow up to 6–7 lines
-          ),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          Container(
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
+              color: const Color(0xFFF8F6F6),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
-                  blurRadius: 4,
+                  blurRadius: 8,
+                  offset: const Offset(0, -2),
                 ),
               ],
             ),
-            child: TextField(
-              controller: _controller,
-              keyboardType: TextInputType.multiline,
-              textInputAction: TextInputAction.newline,
-              minLines: 1,
-              maxLines: 6, // ❗ Multiline enabled and visible
-              textAlignVertical: TextAlignVertical.top,
-              decoration: InputDecoration(
-                hintText: 'Ask about a lost item...',
-                hintStyle: TextStyle(color: Colors.grey[500]),
-                border: InputBorder.none,
-                isCollapsed: true,
-              ),
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      minHeight: 48,
+                      maxHeight: 160, // ❗ TextField can grow up to 6–7 lines
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                      child: TextField(
+                        controller: _controller,
+                        keyboardType: TextInputType.multiline,
+                        textInputAction: TextInputAction.newline,
+                        minLines: 1,
+                        maxLines: 6, // ❗ Multiline enabled and visible
+                        textAlignVertical: TextAlignVertical.top,
+                        decoration: InputDecoration(
+                          hintText: 'Ask about a lost item...',
+                          hintStyle: TextStyle(color: Colors.grey[500]),
+                          border: InputBorder.none,
+                          isCollapsed: true,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                GestureDetector(
+                  onTap: _sendMessage,
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFBF0C4F),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFBF0C4F).withOpacity(0.3),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(Icons.send, color: Colors.white),
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
-      ),
-
-      const SizedBox(width: 12),
-
-      GestureDetector(
-        onTap: _sendMessage,
-        child: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: const Color(0xFF8C2F39),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF8C2F39).withOpacity(0.3),
-                blurRadius: 8,
-              ),
-            ],
-          ),
-          child: const Icon(Icons.send, color: Colors.white),
-        ),
-      ),
-    ],
-  ),)
-
         ],
       ),
     );

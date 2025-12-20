@@ -9,7 +9,7 @@ import 'chat_bot_page.dart';
 import 'login_page.dart' as login;
 import '../services/auth_service.dart';
 
-const Color kPrimary = Color(0xFF8C2F39);
+const Color kPrimary = Color(0xFFBF0C4F);
 const Color kBackgroundLight = Color(0xFFFAF9F6);
 
 class HomePageFeed extends StatefulWidget {
@@ -31,9 +31,6 @@ class _HomePageFeedState extends State<HomePageFeed> {
     "AB1",
     "AB2",
     "AB3",
-    "NB1",
-    "NB2",
-    "NB3",
     "Auditorium",
     "Lib",
     "Canteen",

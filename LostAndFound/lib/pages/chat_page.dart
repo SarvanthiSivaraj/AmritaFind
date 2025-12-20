@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'message.dart'; // Corrected import path
 import 'package:lostandfound/services/chat_service.dart';
 
-const Color kPrimaryChat = Color(0xFF8D303B);
+const Color kPrimaryChat = Color(0xFFBF0C4F);
 
 class ChatPage extends StatefulWidget {
   final String receiverId;

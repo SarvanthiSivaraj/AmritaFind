@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:lostandfound/pages/chat_page.dart';
 import 'package:lostandfound/services/chat_service.dart';
 
-const Color kPrimary = Color(0xFF8C2F39);
+const Color kPrimary = Color(0xFFBF0C4F);
 const Color kBackgroundLight = Color(0xFFFAF9F6);
 
 class ChatListPage extends StatefulWidget {
