@@ -4,8 +4,8 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 const Color kPrimary = Color(0xFF8C2F39);
@@ -59,10 +59,8 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
       _itemNameController.text = data["item_name"] ?? "";
       _descriptionController.text = data["description"] ?? "";
       _contactController.text = data["contact"] ?? "";
-      _secretQuestionController.text =
-          data["secret_question"] ?? "";
-      _uploadedUrls =
-          List<String>.from(data["imageUrls"] ?? []);
+      _secretQuestionController.text = data["secret_question"] ?? "";
+      _uploadedUrls = List<String>.from(data["imageUrls"] ?? []);
     }
   }
 
@@ -76,13 +74,10 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
     final images = await _picker.pickMultiImage();
     if (images == null) return;
 
-    if (images.length +
-            _selectedImages.length +
-            _uploadedUrls.length >
-        5) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Max 5 images allowed")),
-      );
+    if (images.length + _selectedImages.length + _uploadedUrls.length > 5) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Max 5 images allowed")));
       return;
     }
 
@@ -93,21 +88,40 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
 
   // ---------------- UPLOAD NEW IMAGES ----------------
   Future<void> _uploadImages() async {
+    // --- Cloudinary Setup ---
+    // IMPORTANT: Replace with your details from your Cloudinary dashboard.
+    final cloudinary = CloudinaryPublic(
+      'doysqcrok', // <-- Paste your Cloud Name here
+      'amritafind_uploads', // <-- Paste your Upload Preset name here
+      cache: false,
+    );
+
     for (final img in _selectedImages) {
-      final fileName =
-          "${DateTime.now().millisecondsSinceEpoch}_${img.name}";
-      final ref = FirebaseStorage.instance
-          .ref("lost_found_images/$fileName");
+      try {
+        final response = await cloudinary.uploadFile(
+          kIsWeb
+              ? CloudinaryFile.fromBytesData(
+                  await img.readAsBytes(),
+                  identifier: img.name,
+                )
+              : CloudinaryFile.fromFile(
+                  img.path,
+                  resourceType: CloudinaryResourceType.Image,
+                ),
+        );
 
-      if (kIsWeb) {
-        final Uint8List bytes = await img.readAsBytes();
-        await ref.putData(bytes);
-      } else {
-        await ref.putFile(File(img.path));
+        if (response.secureUrl.isNotEmpty) {
+          _uploadedUrls.add(response.secureUrl);
+        } else {
+          // The request was successful, but the URL is unexpectedly empty.
+          debugPrint(
+            'Failed to upload ${img.name}. Secure URL was empty in the response.',
+          );
+        }
+      } catch (e) {
+        debugPrint('Error uploading image to Cloudinary: $e');
+        // Optionally, show an error to the user
       }
-
-      final url = await ref.getDownloadURL();
-      _uploadedUrls.add(url);
     }
   }
 
@@ -117,8 +131,7 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
     if (user == null || user.email == null) return;
 
     final rollNumber = _extractUserIdFromEmail(user.email!);
-    final collection = widget.collection ??
-        (_status == "Lost" ? "lost_items" : "found_items");
+    final collectionName = _status == 'Lost' ? 'lost_items' : 'found_items';
 
     final data = {
       "item_name": _itemNameController.text.trim(),
@@ -132,11 +145,11 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
 
     if (isEdit) {
       await FirebaseFirestore.instance
-          .collection(collection)
+          .collection(widget.collection!)
           .doc(widget.docId)
           .update(data);
     } else {
-      await FirebaseFirestore.instance.collection(collection).add({
+      await FirebaseFirestore.instance.collection(collectionName).add({
         ...data,
         "userId": rollNumber,
         "uid": user.uid,
@@ -166,8 +179,10 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text("Upload Images (Max 5)",
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                "Upload Images (Max 5)",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 10),
 
               GestureDetector(
@@ -180,8 +195,11 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
                   ),
                   child: Column(
                     children: const [
-                      Icon(Icons.add_a_photo_outlined,
-                          size: 40, color: kPrimary),
+                      Icon(
+                        Icons.add_a_photo_outlined,
+                        size: 40,
+                        color: kPrimary,
+                      ),
                       SizedBox(height: 10),
                       Text("Tap to select images"),
                     ],
@@ -191,8 +209,7 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
 
               const SizedBox(height: 10),
 
-              if (_uploadedUrls.isNotEmpty ||
-                  _selectedImages.isNotEmpty)
+              if (_uploadedUrls.isNotEmpty || _selectedImages.isNotEmpty)
                 SizedBox(
                   height: 120,
                   child: ListView(
@@ -209,10 +226,8 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
                       ..._selectedImages.map(
                         (img) => _imageTile(
                           kIsWeb
-                              ? Image.network(img.path,
-                                  fit: BoxFit.cover)
-                              : Image.file(File(img.path),
-                                  fit: BoxFit.cover),
+                              ? Image.network(img.path, fit: BoxFit.cover)
+                              : Image.file(File(img.path), fit: BoxFit.cover),
                           onRemove: () {
                             setState(() => _selectedImages.remove(img));
                           },
@@ -235,12 +250,10 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
               const SizedBox(height: 20),
 
               _buildField("Item Name", _itemNameController),
-              _buildField("Description", _descriptionController,
-                  maxLines: 3),
+              _buildField("Description", _descriptionController, maxLines: 3),
               _buildLocationDropdown(),
               _buildField("Contact Number", _contactController),
-              _buildField(
-                  "Secret Question", _secretQuestionController),
+              _buildField("Secret Question", _secretQuestionController),
 
               const SizedBox(height: 30),
 
@@ -249,8 +262,7 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: kPrimary,
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                   onPressed: _isSubmitting
                       ? null
@@ -270,9 +282,11 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
 
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(isEdit
-                                    ? "Post updated successfully!"
-                                    : "Item posted successfully!"),
+                                content: Text(
+                                  isEdit
+                                      ? "Post updated successfully!"
+                                      : "Item posted successfully!",
+                                ),
                               ),
                             );
 
@@ -284,12 +298,10 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
                           }
                         },
                   child: _isSubmitting
-                      ? const CircularProgressIndicator(
-                          color: Colors.white)
+                      ? const CircularProgressIndicator(color: Colors.white)
                       : Text(
                           isEdit ? "Update" : "Submit",
-                          style:
-                              const TextStyle(fontSize: 16),
+                          style: const TextStyle(fontSize: 16),
                         ),
                 ),
               ),
@@ -301,17 +313,13 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
   }
 
   // ---------------- HELPERS ----------------
-  Widget _imageTile(Image img,
-      {required VoidCallback onRemove}) {
+  Widget _imageTile(Image img, {required VoidCallback onRemove}) {
     return Stack(
       children: [
         Container(
           margin: const EdgeInsets.only(right: 10),
           width: 120,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: img,
-          ),
+          child: ClipRRect(borderRadius: BorderRadius.circular(12), child: img),
         ),
         Positioned(
           right: 0,
@@ -321,8 +329,7 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
             backgroundColor: Colors.red,
             child: InkWell(
               onTap: onRemove,
-              child: const Icon(Icons.close,
-                  size: 16, color: Colors.white),
+              child: const Icon(Icons.close, size: 16, color: Colors.white),
             ),
           ),
         ),
@@ -333,34 +340,30 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
   Widget _statusButton(String label) {
     return Expanded(
       child: ElevatedButton(
-        onPressed:
-            isEdit ? null : () => setState(() => _status = label),
+        onPressed: isEdit ? null : () => setState(() => _status = label),
         style: ElevatedButton.styleFrom(
-          backgroundColor:
-              _status == label ? kPrimary : Colors.grey[300],
-          foregroundColor:
-              _status == label ? Colors.white : Colors.black,
+          backgroundColor: _status == label ? kPrimary : Colors.grey[300],
+          foregroundColor: _status == label ? Colors.white : Colors.black,
         ),
         child: Text(label),
       ),
     );
   }
 
-  Widget _buildField(String label,
-      TextEditingController controller,
-      {int maxLines = 1}) {
+  Widget _buildField(
+    String label,
+    TextEditingController controller, {
+    int maxLines = 1,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextFormField(
         controller: controller,
         maxLines: maxLines,
-        validator: (v) =>
-            v == null || v.isEmpty ? "Required" : null,
+        validator: (v) => v == null || v.isEmpty ? "Required" : null,
         decoration: InputDecoration(
           labelText: label,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
     );
@@ -373,9 +376,7 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
         value: _location,
         decoration: InputDecoration(
           labelText: "Location",
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         ),
         items: const [
           DropdownMenuItem(value: "AB1", child: Text("AB1")),

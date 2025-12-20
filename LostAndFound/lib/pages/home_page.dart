@@ -365,11 +365,8 @@ class _HomePageFeedState extends State<HomePageFeed> {
   /// ------------------------------------------
   Widget _itemCard(Map<String, dynamic> item) {
     // ✅ FIX: Read from the 'imageUrls' list, not 'imageUrl'
-    final images = item["imageUrls"] as List?;
-    final firstImage = (images != null && images.isNotEmpty)
-        ? images.first.toString()
-        : null;
-
+    final imageUrls =
+        (item["imageUrls"] as List?)?.map((e) => e.toString()).toList() ?? [];
     final dt = (item["timestamp"] as Timestamp?)?.toDate();
     final dateStr = dt != null ? dt.toString().substring(0, 16) : "";
 
@@ -388,19 +385,7 @@ class _HomePageFeedState extends State<HomePageFeed> {
       ),
       child: Column(
         children: [
-          if (firstImage != null)
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
-              ),
-              child: Image.network(
-                firstImage,
-                height: 180,
-                width: double.infinity,
-                fit: BoxFit.cover,
-              ),
-            ),
-
+          _ImageCarousel(imageUrls: imageUrls),
           Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
@@ -470,8 +455,20 @@ class _HomePageFeedState extends State<HomePageFeed> {
                   width: double.infinity,
                   child: ElevatedButton(
                     // ✅ FIX: Pass required data to ChatPage
-                    onPressed: () {
-                      // Prevent user from chatting with themselves
+                    onPressed: () async {
+                      // Prompt user to log in if they are not already.
+                      if (!AuthService.isLoggedIn) {
+                        final loggedIn = await Navigator.push<bool>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const login.LoginScreen(),
+                          ),
+                        );
+                        // If user cancels or fails login, do nothing.
+                        if (loggedIn != true) return;
+                      }
+
+                      // Prevent user from chatting with themselves.
                       if (AuthService.currentUser?.uid == item['uid']) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -496,7 +493,7 @@ class _HomePageFeedState extends State<HomePageFeed> {
                         return;
                       }
 
-                      // Navigate to chat, passing the required IDs and context
+                      // Navigate to chat, passing the required IDs and context.
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -542,6 +539,126 @@ class _HomePageFeedState extends State<HomePageFeed> {
         labelStyle: TextStyle(color: active ? Colors.white : Colors.black),
         onSelected: (_) => onTap(),
         backgroundColor: Colors.grey.shade200,
+      ),
+    );
+  }
+}
+
+/// A swipeable image carousel with navigation arrows and page indicators.
+class _ImageCarousel extends StatefulWidget {
+  final List<String> imageUrls;
+  const _ImageCarousel({required this.imageUrls});
+
+  @override
+  State<_ImageCarousel> createState() => _ImageCarouselState();
+}
+
+class _ImageCarouselState extends State<_ImageCarousel> {
+  int _currentPage = 0;
+  final PageController _pageController = PageController();
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.imageUrls.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // If only one image, just show it without the carousel controls.
+    if (widget.imageUrls.length == 1) {
+      return ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        child: Image.network(
+          widget.imageUrls.first,
+          height: 180,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => const SizedBox(
+            height: 180,
+            child: Icon(Icons.broken_image, color: Colors.grey),
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 180,
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            PageView.builder(
+              controller: _pageController,
+              itemCount: widget.imageUrls.length,
+              onPageChanged: (index) => setState(() => _currentPage = index),
+              itemBuilder: (_, index) {
+                return Image.network(
+                  widget.imageUrls[index],
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) =>
+                      const Icon(Icons.broken_image, color: Colors.grey),
+                );
+              },
+            ),
+
+            // Navigation Arrows
+            Positioned(
+              left: 0,
+              child: IconButton(
+                onPressed: () => _pageController.previousPage(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                ),
+                icon: const Icon(
+                  Icons.arrow_back_ios_new,
+                  color: Colors.white70,
+                ),
+              ),
+            ),
+            Positioned(
+              right: 0,
+              child: IconButton(
+                onPressed: () => _pageController.nextPage(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                ),
+                icon: const Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.white70,
+                ),
+              ),
+            ),
+
+            // Dots Indicator
+            Positioned(
+              bottom: 10,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(widget.imageUrls.length, (index) {
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                    height: 8.0,
+                    width: _currentPage == index ? 24.0 : 8.0,
+                    decoration: BoxDecoration(
+                      color: _currentPage == index
+                          ? Colors.white
+                          : Colors.white54,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

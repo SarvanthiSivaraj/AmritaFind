@@ -1,6 +1,12 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:async/async.dart';
 
 import 'login_page.dart';
@@ -21,6 +27,7 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _loading = true;
   Map<String, dynamic>? _profile;
   String _roll = "";
+  bool _isUploadingPhoto = false;
 
   @override
   void initState() {
@@ -51,20 +58,78 @@ class _ProfilePageState extends State<ProfilePage> {
         "department": "CSE",
         "year": "1",
         "contact": "",
-        "photo": "",
+        "photoUrl": "",
       });
       _profile = {
         "name": _roll,
         "department": "CSE",
         "year": "1",
         "contact": "",
-        "photo": "",
+        "photoUrl": "",
       };
     } else {
       _profile = snap.data();
     }
 
     setState(() => _loading = false);
+  }
+
+  // ---------------- UPLOAD PROFILE PICTURE ----------------
+  Future<void> _changeProfilePicture() async {
+    final image = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80, // Compress image slightly
+    );
+    if (image == null) return;
+
+    setState(() => _isUploadingPhoto = true);
+
+    try {
+      final cloudinary = CloudinaryPublic(
+        'doysqcrok',
+        'amritafind_uploads',
+        cache: false,
+      );
+
+      final response = await cloudinary.uploadFile(
+        kIsWeb
+            ? CloudinaryFile.fromBytesData(
+                await image.readAsBytes(),
+                identifier: image.name,
+              )
+            : CloudinaryFile.fromFile(
+                image.path,
+                resourceType: CloudinaryResourceType.Image,
+              ),
+      );
+
+      if (response.secureUrl.isNotEmpty) {
+        final newPhotoUrl = response.secureUrl;
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          await FirebaseFirestore.instance
+              .collection("users")
+              .doc(user.uid)
+              .update({"photoUrl": newPhotoUrl});
+          await _loadProfile(); // Refresh profile data
+        }
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Image upload failed. Please try again."),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error uploading profile picture: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("An error occurred during upload.")),
+      );
+    } finally {
+      if (mounted) setState(() => _isUploadingPhoto = false);
+    }
   }
 
   // ---------------- LOGOUT ----------------
@@ -133,8 +198,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           MaterialPageRoute(
                             builder: (_) => PostItemFormPage(
                               docId: doc.id,
-                              collection:
-                                  isLost ? "lost_items" : "found_items",
+                              collection: isLost ? "lost_items" : "found_items",
                               existingData: data,
                             ),
                           ),
@@ -146,8 +210,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       icon: const Icon(Icons.delete, color: Colors.red),
                       onPressed: () async {
                         await FirebaseFirestore.instance
-                            .collection(
-                                isLost ? "lost_items" : "found_items")
+                            .collection(isLost ? "lost_items" : "found_items")
                             .doc(doc.id)
                             .delete();
                       },
@@ -166,9 +229,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     // ---------- NOT LOGGED IN ----------
@@ -176,13 +237,11 @@ class _ProfilePageState extends State<ProfilePage> {
       return Scaffold(
         appBar: AppBar(
           backgroundColor: kPrimary,
-          title:
-              const Text("Profile", style: TextStyle(color: Colors.white)),
+          title: const Text("Profile", style: TextStyle(color: Colors.white)),
         ),
         body: Center(
           child: ElevatedButton(
-            style:
-                ElevatedButton.styleFrom(backgroundColor: kPrimary),
+            style: ElevatedButton.styleFrom(backgroundColor: kPrimary),
             onPressed: () async {
               final ok = await Navigator.push(
                 context,
@@ -190,8 +249,7 @@ class _ProfilePageState extends State<ProfilePage> {
               );
               if (ok == true) _loadProfile();
             },
-            child: const Text("Login",
-                style: TextStyle(color: Colors.white)),
+            child: const Text("Login", style: TextStyle(color: Colors.white)),
           ),
         ),
       );
@@ -202,8 +260,7 @@ class _ProfilePageState extends State<ProfilePage> {
       backgroundColor: kBackgroundLight,
       appBar: AppBar(
         backgroundColor: kPrimary,
-        title:
-            const Text("My Profile", style: TextStyle(color: Colors.white)),
+        title: const Text("My Profile", style: TextStyle(color: Colors.white)),
         actions: [
           // ✏️ EDIT PROFILE
           IconButton(
@@ -212,8 +269,7 @@ class _ProfilePageState extends State<ProfilePage> {
               await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>
-                      EditProfilePage(profile: _profile!),
+                  builder: (_) => EditProfilePage(profile: _profile!),
                 ),
               );
               _loadProfile();
@@ -231,32 +287,56 @@ class _ProfilePageState extends State<ProfilePage> {
           children: [
             const SizedBox(height: 24),
 
-            // AVATAR (VIEW ONLY)
-            CircleAvatar(
-              radius: 55,
-              backgroundColor: Colors.pink.shade100,
-              backgroundImage: (_profile!["photo"] ?? "").isEmpty
-                  ? null
-                  : NetworkImage(_profile!["photo"]),
-              child: (_profile!["photo"] ?? "").isEmpty
-                  ? const Icon(Icons.person,
-                      size: 50, color: kPrimary)
-                  : null,
+            // AVATAR with upload functionality
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                CircleAvatar(
+                  radius: 55,
+                  backgroundColor: Colors.grey.shade200,
+                  backgroundImage: (_profile!["photoUrl"] ?? "").isEmpty
+                      ? null
+                      : NetworkImage(_profile!["photoUrl"]),
+                  child: (_profile!["photoUrl"] ?? "").isEmpty
+                      ? const Icon(Icons.person, size: 50, color: kPrimary)
+                      : null,
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: GestureDetector(
+                    onTap: _isUploadingPhoto ? null : _changeProfilePicture,
+                    child: const CircleAvatar(
+                      radius: 20,
+                      backgroundColor: Colors.white,
+                      child: Icon(Icons.camera_alt, color: kPrimary, size: 22),
+                    ),
+                  ),
+                ),
+                if (_isUploadingPhoto)
+                  const CircleAvatar(
+                    radius: 55,
+                    backgroundColor: Colors.black45,
+                    child: CircularProgressIndicator(color: Colors.white),
+                  ),
+              ],
             ),
 
             const SizedBox(height: 10),
-            Text(_profile!["name"],
-                style: const TextStyle(
-                    fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(
+              _profile!["name"],
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
             Text("Department: ${_profile!["department"]}"),
             Text("Year: ${_profile!["year"]}"),
             Text("Roll Number: $_roll"),
             Text("Phone: ${_profile!["contact"]}"),
 
             const Divider(),
-            const Text("My Posts",
-                style:
-                    TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text(
+              "My Posts",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             _myPosts(),
             const SizedBox(height: 40),
           ],
