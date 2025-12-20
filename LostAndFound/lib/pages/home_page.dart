@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'post_item_form_page.dart';
@@ -157,15 +158,35 @@ class _HomePageFeedState extends State<HomePageFeed> {
         backgroundColor: kBackgroundLight,
         elevation: 0,
         title: Row(
-          children: const [
-            Icon(Icons.school, color: kPrimary, size: 28),
-            SizedBox(width: 8),
-            Expanded(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+                border: Border.all(color: kPrimary.withOpacity(0.12)),
+                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
+              ),
+              child: ClipOval(
+                child: Image.network(
+                        'https://img.jagranjosh.com/images/2024/May/852024/Logo2.wsmf.png',
+                  fit: BoxFit.cover,
+                  width: 40,
+                  height: 40,
+                  errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.person, color: kPrimary, size: 18)),
+                ),
+              ),
+            ),
+
+            const SizedBox(width: 8),
+            const Expanded(
               child: Text(
-                "Lost & Found",
+                "AmritaFind",
                 style: TextStyle(
                   color: Colors.black,
                   fontWeight: FontWeight.bold,
+                  fontSize: 25,
                 ),
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
@@ -368,7 +389,7 @@ class _HomePageFeedState extends State<HomePageFeed> {
                     Expanded(
                       child: Text(
                         title,
-                        style: const TextStyle(
+                        style: GoogleFonts.plusJakartaSans(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),

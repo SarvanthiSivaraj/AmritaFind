@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 
@@ -29,9 +30,9 @@ class MyApp extends StatelessWidget {
       title: 'AmritaFind',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        fontFamily: 'Plus Jakarta Sans',
         primaryColor: const Color(0xFFBF0C4F),
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFBF0C4F)),
+        textTheme: GoogleFonts.plusJakartaSansTextTheme(),
         useMaterial3: true,
       ),
 
