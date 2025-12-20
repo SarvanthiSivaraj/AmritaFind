@@ -78,20 +78,29 @@ lostandfound/
 ├── lib/
 │   ├── main.dart
 │   ├── firebase_options.dart
+│   │
 │   ├── pages/
+│   │   ├── app_routes.dart
 │   │   ├── onboarding_screen.dart
 │   │   ├── login_page.dart
 │   │   ├── home_page.dart
 │   │   ├── post_item_form_page.dart
 │   │   ├── profile_page.dart
+│   │   ├── edit_profile_page.dart
+│   │   ├── chat_list_page.dart
 │   │   ├── chat_page.dart
-│   │   └── chat_bot_page.dart
+│   │   ├── chat_bot_page.dart
+│   │   └── message.dart
+│   │
 │   └── services/
 │       ├── auth_service.dart
-│       └── ai_service.dart
+│       ├── ai_service.dart
+│       └── chat_service.dart
+│
 ├── android/
 ├── ios/
 └── pubspec.yaml
+
 ```
 
 ### Technology Stack
