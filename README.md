@@ -122,7 +122,7 @@ lostandfound/
 - **Flutter SDK** 3.0 or higher ([Download](https://flutter.dev/docs/get-started/install))
 - **Dart** 3.0+ (included with Flutter)
 - **Firebase Account** ([Create Free Account](https://firebase.google.com))
--  **Cloudinary Account** ([Create Free Account](https://cloudinary.com/))
+- **Cloudinary Account** ([Create Free Account](https://cloudinary.com/))
 - **Google Gemini API Key** ([Get API Key](https://ai.google.dev))
 
 ### Step 1: Clone the Repository
@@ -146,10 +146,16 @@ flutter pub get
 4. Enable the following Firebase services:
    - **Authentication** (Email/Password, Google)
    - **Cloud Firestore** (Database)
-5. Configure Cloudinary service:
-   - **Storage** (for image uploads)
 
-### Step 4: Setup Environment Variables
+### Step 4: Configure Cloudinary
+
+1. Create Account: Go to Cloudinary and sign up for a free account at [Cloudinary](https://cloudinary.com/).
+2. Get Credentials:
+   - From your Dashboard, copy your Cloud Name.
+   - Go to Settings > Upload, create an Unsigned Upload Preset (e.g., A_uploads), and copy its name.
+3. Update App Code: In **lib/pages/post_item_form_page.dart** and **lib/pages/profile_page.dart**, add your credentials:
+
+### Step 5: Setup Environment Variables
 
 1. Create a `.env` file in the `lostandfound/` directory:
 
@@ -163,7 +169,7 @@ cp .env.example .env
 GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
-### Step 5: Run the Application
+### Step 6: Run the Application
 
 #### For Android:
 ```bash
