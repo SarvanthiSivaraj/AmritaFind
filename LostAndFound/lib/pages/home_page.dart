@@ -210,7 +210,7 @@ class _HomePageFeedState extends State<HomePageFeed> {
       /// ADD BUTTON
       floatingActionButton: FloatingActionButton(
         backgroundColor: kPrimary,
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add, color: Color(0xFFFAF9F6)),
         onPressed: () async {
           if (!AuthService.isLoggedIn) {
             final ok = await Navigator.push(
@@ -515,7 +515,10 @@ class _HomePageFeedState extends State<HomePageFeed> {
                       item["source"] == "LOST"
                           ? "Chat with Finder"
                           : "Chat with Owner",
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFFAF9F6),
+                      ),
                     ),
                   ),
                 ),
