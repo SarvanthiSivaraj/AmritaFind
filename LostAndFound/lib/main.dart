@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 import 'firebase_options.dart'; // <-- required for Firebase
+import 'package:lostandfound/pages/app_shell.dart';
 import 'package:lostandfound/pages/onboarding_screen.dart';
 import 'package:lostandfound/pages/login_page.dart';
 import 'package:lostandfound/pages/home_page.dart';
@@ -35,7 +36,7 @@ class MyApp extends StatelessWidget {
       ),
 
       /// 👇 Your app starts here
-      home: OnboardingScreen(),
+      home: const AppShell(),
     );
   }
 }

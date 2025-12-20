@@ -4,28 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/auth_service.dart';
 
-void main() {
-  runApp(const LostFoundApp());
-}
-
-class LostFoundApp extends StatelessWidget {
-  const LostFoundApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Lost & Found – Amrita Campus',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primaryColor: const Color(0xFFBF0C4F),
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFBF0C4F)),
-        fontFamily: 'Lexend',
-        useMaterial3: true,
-      ),
-      home: const LoginScreen(),
-    );
-  }
-}
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

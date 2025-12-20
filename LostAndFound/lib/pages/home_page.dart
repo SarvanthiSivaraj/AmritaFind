@@ -173,47 +173,7 @@ class _HomePageFeedState extends State<HomePageFeed> {
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.chat_bubble_outline, color: kPrimary),
-            onPressed: () async {
-              if (!AuthService.isLoggedIn) {
-                final loggedIn = await Navigator.push<bool>(
-                  context,
-                  MaterialPageRoute(builder: (_) => const login.LoginScreen()),
-                );
-                if (loggedIn != true) return; // User cancelled or failed login
-              }
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ChatListPage()),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.chat_bubble, color: kPrimary),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ChatbotScreen()),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.person, color: kPrimary),
-            onPressed: () async {
-              if (!AuthService.isLoggedIn) {
-                final ok = await Navigator.push<bool>(
-                  context,
-                  MaterialPageRoute(builder: (_) => const login.LoginScreen()),
-                );
-                if (ok != true) return;
-              }
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ProfilePage()),
-              );
-            },
-          ),
-        ],
+        
       ),
 
       /// ADD BUTTON
