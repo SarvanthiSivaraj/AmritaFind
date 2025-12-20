@@ -10,33 +10,23 @@ class AiService {
 
   /// Sends a user message directly to the Google Gemini API.
   /// NOTE: This will fail in a web browser due to CORS policy.
-  /// It is also insecure as it exposes the API key in the client app.
+  /// It is also insecure as it exposes the API key in the client app for production.
   /// and returns the assistant's text reply.
-  Future<String> sendMessage(String userMessage) async {
-    // The system prompt provides context to the model.
-    final systemPrompt =
-        'You are the LostAndFound assistant for a university lost-and-found app. '
-        'Only respond with helpful, concise information related to lost and found items, reports, locations, and recovery steps for this app. '
-        'Do NOT provide unrelated information, personal opinions, or external links. Keep style consistent with short helpful messages.';
-
-    // For Gemini, the prompt is part of the 'contents'.
-    final fullPrompt = '$systemPrompt\n\nUser: $userMessage\nAssistant:';
-
+  Future<String> sendMessage(String prompt) async {
     // Use the stable v1 endpoint for Gemini models.
     final endpoint = Uri.parse(
       'https://generativelanguage.googleapis.com/v1/models/$model:generateContent?key=$apiKey',
     );
 
-    // The request body for Gemini.
     final body = jsonEncode({
       'contents': [
         {
           'parts': [
-            {'text': fullPrompt},
+            {'text': prompt},
           ],
         },
       ],
-      'generationConfig': {'temperature': 0.4, 'maxOutputTokens': 512},
+      'generationConfig': {'temperature': 0.2, 'maxOutputTokens': 50},
     });
 
     try {
@@ -87,6 +77,42 @@ class AiService {
       log('Error in AiService.sendMessage: $e\n$s');
       // Re-throw the original exception to get a more specific error in the UI.
       rethrow;
+    }
+  }
+
+  /// Checks if a lost item and a found item are a likely match.
+  Future<bool> isMatch(
+    Map<String, dynamic> lostItem,
+    Map<String, dynamic> foundItem,
+  ) async {
+    final String prompt =
+        '''
+You are an intelligent matching assistant for a university's lost and found app.
+Your task is to determine if a 'FOUND' item is a likely match for a 'LOST' item based on their details.
+Consider the item name, description, and location. A perfect location match is not required, but it adds to the likelihood.
+Respond with only one word: "MATCH" if it's a probable match, or "NO_MATCH" if it is not.
+
+---
+LOST Item Details:
+Name: ${lostItem['item_name'] ?? 'N/A'}
+Description: ${lostItem['description'] ?? 'N/A'}
+Location Last Seen: ${lostItem['location'] ?? 'N/A'}
+---
+FOUND Item Details:
+Name: ${foundItem['item_name'] ?? 'N/A'}
+Description: ${foundItem['description'] ?? 'N/A'}
+Location Found: ${foundItem['location'] ?? 'N/A'}
+---
+
+Based on these details, is it a likely match?
+''';
+
+    try {
+      final response = await sendMessage(prompt);
+      return response.trim().toUpperCase() == 'MATCH';
+    } catch (e) {
+      log('Error during AI match check: $e');
+      return false; // Don't create a notification if AI fails
     }
   }
 }

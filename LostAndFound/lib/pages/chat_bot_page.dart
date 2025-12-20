@@ -85,7 +85,15 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         );
       }
 
-      final botResponse = await _aiService.sendMessage(userMessageText);
+      // Construct the full prompt with system instructions for the chatbot.
+      const systemPrompt =
+          'You are the LostAndFound assistant for a university lost-and-found app. '
+          'Only respond with helpful, concise information related to lost and found items, reports, locations, and recovery steps for this app. '
+          'Do NOT provide unrelated information, personal opinions, or external links. Keep style consistent with short helpful messages.';
+
+      final fullPrompt = '$systemPrompt\n\nUser: $userMessageText\nAssistant:';
+
+      final botResponse = await _aiService.sendMessage(fullPrompt);
       if (mounted) {
         setState(() {
           // Remove typing indicator and add bot's response

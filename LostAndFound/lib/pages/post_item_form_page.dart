@@ -7,6 +7,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../services/ai_service.dart';
 
 const Color kPrimary = Color(0xFFBF0C4F);
 const Color kBackgroundLight = Color(0xFFFAF9F6);
@@ -149,14 +151,85 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
           .doc(widget.docId)
           .update(data);
     } else {
-      await FirebaseFirestore.instance.collection(collectionName).add({
-        ...data,
-        "userId": rollNumber,
-        "uid": user.uid,
-        "email": user.email,
-        "timestamp": FieldValue.serverTimestamp(),
-      });
+      final newDocRef = await FirebaseFirestore.instance
+          .collection(collectionName)
+          .add({
+            ...data,
+            "userId": rollNumber,
+            "uid": user.uid,
+            "email": user.email,
+            "timestamp": FieldValue.serverTimestamp(),
+          });
+
+      // ✨ New AI Matching Logic ✨
+      if (_status == 'Lost') {
+        // Run in the background, don't block the UI
+        _runAiMatching(data, newDocRef.id, user.uid);
+      }
     }
+  }
+
+  // ---------------- AI MATCHING ----------------
+  Future<void> _runAiMatching(
+    Map<String, dynamic> lostItemData,
+    String lostItemId,
+    String userId,
+  ) async {
+    debugPrint("🤖 Starting AI matching for new lost item...");
+
+    final apiKey = dotenv.env['GEMINI_API_KEY'];
+    if (apiKey == null) {
+      debugPrint("GEMINI_API_KEY not found. Skipping AI matching.");
+      return;
+    }
+    final aiService = AiService(apiKey: apiKey);
+
+    final foundItemsSnapshot = await FirebaseFirestore.instance
+        .collection("found_items")
+        .get();
+    final foundItems = foundItemsSnapshot.docs;
+
+    if (foundItems.isEmpty) {
+      debugPrint("No found items to match against. Skipping.");
+      return;
+    }
+
+    debugPrint("Found ${foundItems.length} items to check against.");
+
+    for (final foundDoc in foundItems) {
+      final foundItemData = foundDoc.data();
+      final isMatch = await aiService.isMatch(lostItemData, foundItemData);
+
+      if (isMatch) {
+        debugPrint(
+          "✅ AI Match Found! Lost ID: $lostItemId, Found ID: ${foundDoc.id}",
+        );
+        await _createMatchNotification(
+          userId: userId,
+          lostItemName: lostItemData['item_name'],
+          lostItemId: lostItemId,
+          foundItemId: foundDoc.id,
+        );
+      }
+    }
+    debugPrint("🤖 AI matching finished.");
+  }
+
+  Future<void> _createMatchNotification({
+    required String userId,
+    required String lostItemName,
+    required String lostItemId,
+    required String foundItemId,
+  }) async {
+    await FirebaseFirestore.instance.collection('notifications').add({
+      'userId': userId,
+      'title': 'Potential Match Found!',
+      'body': "We think we found a match for your lost item: '$lostItemName'.",
+      'lostItemId': lostItemId,
+      'foundItemId': foundItemId,
+      'isRead': false,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
   }
 
   // ---------------- UI ----------------
@@ -221,8 +294,10 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
                             ? Image.network(safeUrl, fit: BoxFit.cover)
                             : Container(
                                 color: Colors.grey.shade200,
-                                child: const Icon(Icons.broken_image,
-                                    color: Colors.grey),
+                                child: const Icon(
+                                  Icons.broken_image,
+                                  color: Colors.grey,
+                                ),
                               );
 
                         return _imageTile(

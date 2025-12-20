@@ -4,9 +4,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'post_item_form_page.dart';
 import 'chat_page.dart';
-import 'profile_page.dart';
 import 'chat_list_page.dart';
 import 'chat_bot_page.dart';
+import 'notifications_page.dart';
+import 'profile_page.dart';
 import 'login_page.dart' as login;
 import '../services/auth_service.dart';
 
@@ -194,6 +195,7 @@ class _HomePageFeedState extends State<HomePageFeed> {
             ),
           ],
         ),
+        actions: [_buildNotificationButton(context)],
         
       ),
 
@@ -279,6 +281,49 @@ class _HomePageFeedState extends State<HomePageFeed> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildNotificationButton(BuildContext context) {
+    if (!AuthService.isLoggedIn) return const SizedBox.shrink();
+
+    final userId = AuthService.currentUser!.uid;
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('notifications')
+          .where('userId', isEqualTo: userId)
+          .where('isRead', isEqualTo: false)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final unreadCount = snapshot.data?.docs.length ?? 0;
+
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.notifications_outlined, color: Colors.black),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const NotificationsPage()),
+                );
+              },
+            ),
+            if (unreadCount > 0)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: const BoxDecoration(color: kPrimary, shape: BoxShape.circle),
+                  constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                  child: Text('$unreadCount', style: const TextStyle(color: Colors.white, fontSize: 10), textAlign: TextAlign.center),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
