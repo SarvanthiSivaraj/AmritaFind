@@ -149,7 +149,7 @@ flutter pub get
 
 ### Step 4: Configure Cloudinary
 
-1. Create Account: Go to Cloudinary and sign up for a free account at [Cloudinary](https://cloudinary.com/).
+1. Create Account at [Cloudinary](https://cloudinary.com/) and sign up for a free account.
 2. Get Credentials:
    - From your Dashboard, copy your Cloud Name.
    - Go to Settings > Upload, create an Unsigned Upload Preset (e.g., A_uploads), and copy its name.
