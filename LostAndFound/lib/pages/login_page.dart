@@ -257,22 +257,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 28),
 
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Text(
-                          "Don't have an account? ",
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                        Text(
-                          "Sign up",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: primary,
-                          ),
-                        ),
-                      ],
-                    ),
+                    
 
                     const SizedBox(height: 24),
                   ],
