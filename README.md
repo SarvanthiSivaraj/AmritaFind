@@ -101,7 +101,7 @@ lostandfound/
 | Frontend | Flutter 3.0+ |
 | Backend | Firebase (Auth, Firestore, Storage) |
 | AI/ML | Google Gemini 2.5 Flash API |
-| Image Upload | Firebase Storage |
+| Image Upload | Cloudinary |
 | Real-time DB | Cloud Firestore |
 
 ---
@@ -113,6 +113,7 @@ lostandfound/
 - **Flutter SDK** 3.0 or higher ([Download](https://flutter.dev/docs/get-started/install))
 - **Dart** 3.0+ (included with Flutter)
 - **Firebase Account** ([Create Free Account](https://firebase.google.com))
+-  **Cloudinary Account** ([Create Free Account](https://cloudinary.com/))
 - **Google Gemini API Key** ([Get API Key](https://ai.google.dev))
 
 ### Step 1: Clone the Repository
@@ -136,6 +137,7 @@ flutter pub get
 4. Enable the following Firebase services:
    - **Authentication** (Email/Password, Google)
    - **Cloud Firestore** (Database)
+5. Configure Cloudinary service:
    - **Storage** (for image uploads)
 
 ### Step 4: Setup Environment Variables
