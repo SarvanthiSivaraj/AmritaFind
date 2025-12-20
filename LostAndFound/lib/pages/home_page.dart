@@ -199,10 +199,19 @@ class _HomePageFeedState extends State<HomePageFeed> {
           ),
           IconButton(
             icon: const Icon(Icons.person, color: kPrimary),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ProfilePage()),
-            ),
+            onPressed: () async {
+              if (!AuthService.isLoggedIn) {
+                final ok = await Navigator.push<bool>(
+                  context,
+                  MaterialPageRoute(builder: (_) => const login.LoginScreen()),
+                );
+                if (ok != true) return;
+              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfilePage()),
+              );
+            },
           ),
         ],
       ),

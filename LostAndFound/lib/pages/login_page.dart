@@ -136,8 +136,8 @@ class _LoginScreenState extends State<LoginScreen> {
   // ==========================
   @override
   Widget build(BuildContext context) {
-    const primary = Color(0xFF8B2E34);
-    const background = Color(0xFFFCF8F8);
+    const primary = Color(0xFFBF0C4F);
+    const background = Color(0xFFFAF9F6);
     const border = Color(0xFFE7CFD1);
     const textMain = Color(0xFF1B0D0E);
     const textMuted = Color(0xFF9A4C52);
