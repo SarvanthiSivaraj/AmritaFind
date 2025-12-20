@@ -14,7 +14,11 @@ import 'edit_profile_page.dart';
 import 'post_item_form_page.dart';
 
 const Color kPrimary = Color(0xFFBF0C4F);
-const Color kBackgroundLight = Color(0xFFFAF9F6);
+const Color kSecondary = Color(0xFFD81B60);
+const Color kBackgroundLight = Color(0xFFF9FAFB);
+const Color kSurfaceLight = Colors.white;
+const Color kBorderLight = Color(0xFFE5E7EB);
+const Color kTextLight = Color(0xFF1F2937);
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -76,10 +80,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // ---------------- UPLOAD PROFILE PICTURE ----------------
   Future<void> _changeProfilePicture() async {
-    final image = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 80, // Compress image slightly
-    );
+    final image =
+        await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 80);
     if (image == null) return;
 
     setState(() => _isUploadingPhoto = true);
@@ -97,36 +99,19 @@ class _ProfilePageState extends State<ProfilePage> {
                 await image.readAsBytes(),
                 identifier: image.name,
               )
-            : CloudinaryFile.fromFile(
-                image.path,
-                resourceType: CloudinaryResourceType.Image,
-              ),
+            : CloudinaryFile.fromFile(image.path),
       );
 
       if (response.secureUrl.isNotEmpty) {
-        final newPhotoUrl = response.secureUrl;
         final user = FirebaseAuth.instance.currentUser;
         if (user != null) {
           await FirebaseFirestore.instance
               .collection("users")
               .doc(user.uid)
-              .update({"photoUrl": newPhotoUrl});
-          await _loadProfile(); // Refresh profile data
+              .update({"photoUrl": response.secureUrl});
+          await _loadProfile();
         }
-      } else {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Image upload failed. Please try again."),
-          ),
-        );
       }
-    } catch (e) {
-      debugPrint('Error uploading profile picture: $e');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("An error occurred during upload.")),
-      );
     } finally {
       if (mounted) setState(() => _isUploadingPhoto = false);
     }
@@ -156,7 +141,7 @@ class _ProfilePageState extends State<ProfilePage> {
       builder: (_, snap) {
         if (!snap.hasData) {
           return const Padding(
-            padding: EdgeInsets.all(16),
+            padding: EdgeInsets.all(24),
             child: CircularProgressIndicator(),
           );
         }
@@ -166,10 +151,7 @@ class _ProfilePageState extends State<ProfilePage> {
         final allDocs = [...lostDocs, ...foundDocs];
 
         if (allDocs.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text("No posts yet"),
-          );
+          return _emptyPostsUI();
         }
 
         return ListView.builder(
@@ -182,14 +164,16 @@ class _ProfilePageState extends State<ProfilePage> {
             final isLost = lostDocs.contains(doc);
 
             return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              margin: const EdgeInsets.symmetric(vertical: 6),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: ListTile(
                 title: Text(data["item_name"] ?? "Item"),
                 subtitle: Text(isLost ? "Lost Item" : "Found Item"),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // ✏️ EDIT POST
                     IconButton(
                       icon: const Icon(Icons.edit),
                       onPressed: () async {
@@ -205,7 +189,6 @@ class _ProfilePageState extends State<ProfilePage> {
                         );
                       },
                     ),
-                    // 🗑 DELETE POST
                     IconButton(
                       icon: const Icon(Icons.delete, color: Colors.red),
                       onPressed: () async {
@@ -232,13 +215,8 @@ class _ProfilePageState extends State<ProfilePage> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    // ---------- NOT LOGGED IN ----------
     if (_profile == null) {
       return Scaffold(
-        appBar: AppBar(
-          backgroundColor: kPrimary,
-          title: const Text("Profile", style: TextStyle(color: Colors.white)),
-        ),
         body: Center(
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: kPrimary),
@@ -249,20 +227,19 @@ class _ProfilePageState extends State<ProfilePage> {
               );
               if (ok == true) _loadProfile();
             },
-            child: const Text("Login", style: TextStyle(color: Colors.white)),
+            child: const Text("Login"),
           ),
         ),
       );
     }
 
-    // ---------- LOGGED IN ----------
     return Scaffold(
       backgroundColor: kBackgroundLight,
       appBar: AppBar(
         backgroundColor: kPrimary,
+        elevation: 0,
         title: const Text("My Profile", style: TextStyle(color: Colors.white)),
         actions: [
-          // ✏️ EDIT PROFILE
           IconButton(
             icon: const Icon(Icons.edit, color: Colors.white),
             onPressed: () async {
@@ -275,73 +252,156 @@ class _ProfilePageState extends State<ProfilePage> {
               _loadProfile();
             },
           ),
-          // 🚪 LOGOUT
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: _logout,
           ),
         ],
       ),
+
       body: SingleChildScrollView(
         child: Column(
           children: [
-            const SizedBox(height: 24),
-
-            // AVATAR with upload functionality
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                CircleAvatar(
-                  radius: 55,
-                  backgroundColor: Colors.grey.shade200,
-                  backgroundImage: (_profile!["photoUrl"] ?? "").isEmpty
-                      ? null
-                      : NetworkImage(_profile!["photoUrl"]),
-                  child: (_profile!["photoUrl"] ?? "").isEmpty
-                      ? const Icon(Icons.person, size: 50, color: kPrimary)
-                      : null,
+            // Curved header
+            Container(
+              height: 90,
+              decoration: const BoxDecoration(
+                color: kPrimary,
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(40),
                 ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: GestureDetector(
-                    onTap: _isUploadingPhoto ? null : _changeProfilePicture,
-                    child: const CircleAvatar(
-                      radius: 20,
-                      backgroundColor: Colors.white,
-                      child: Icon(Icons.camera_alt, color: kPrimary, size: 22),
+              ),
+            ),
+
+            // Profile card
+            Transform.translate(
+              offset: const Offset(0, -50),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 56,
+                              backgroundColor: Colors.grey.shade200,
+                              backgroundImage:
+                                  (_profile!["photoUrl"] ?? "").isEmpty
+                                      ? null
+                                      : NetworkImage(_profile!["photoUrl"]),
+                              child: (_profile!["photoUrl"] ?? "").isEmpty
+                                  ? const Icon(Icons.person,
+                                      size: 56, color: Colors.grey)
+                                  : null,
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: GestureDetector(
+                                onTap: _changeProfilePicture,
+                                child: const CircleAvatar(
+                                  radius: 18,
+                                  backgroundColor: kPrimary,
+                                  child: Icon(Icons.camera_alt,
+                                      size: 18, color: Colors.white),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 12),
+                        Text(
+                          (_profile!['name'] ?? 'User').toString(),
+                          style: const TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          (_profile!['department'] ?? '').toString(),
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+
+                        const SizedBox(height: 16),
+                        _infoRow("Department", (_profile!['department'] ?? '').toString()),
+                        _infoRow("Year", (_profile!['year'] ?? '').toString()),
+                        _infoRow("Roll Number", _roll),
+                        _infoRow("Phone", (_profile!['contact'] ?? '').toString()),
+                      ],
                     ),
                   ),
                 ),
-                if (_isUploadingPhoto)
-                  const CircleAvatar(
-                    radius: 55,
-                    backgroundColor: Colors.black45,
-                    child: CircularProgressIndicator(color: Colors.white),
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 10),
+                  Row(
+                    children: const [
+                      Icon(Icons.history, color: kPrimary),
+                      SizedBox(width: 6),
+                      Text(
+                        "My Posts",
+                        style:
+                            TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ],
                   ),
-              ],
+                  const SizedBox(height: 12),
+                  _myPosts(),
+                  const SizedBox(height: 100),
+                ],
+              ),
             ),
-
-            const SizedBox(height: 10),
-            Text(
-              _profile!["name"],
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            Text("Department: ${_profile!["department"]}"),
-            Text("Year: ${_profile!["year"]}"),
-            Text("Roll Number: $_roll"),
-            Text("Phone: ${_profile!["contact"]}"),
-
-            const Divider(),
-            const Text(
-              "My Posts",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            _myPosts(),
-            const SizedBox(height: 40),
           ],
         ),
       ),
+
     );
   }
+
+  Widget _infoRow(String label, String value) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: const TextStyle(color: Colors.grey)),
+            Text(value,
+                style: const TextStyle(fontWeight: FontWeight.w600)),
+          ],
+        ),
+      );
+
+  Widget _emptyPostsUI() => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 40),
+        decoration: BoxDecoration(
+          color: kSurfaceLight,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: kBorderLight),
+        ),
+        child: Column(
+          children: const [
+            Icon(Icons.post_add, size: 40, color: kPrimary),
+            SizedBox(height: 10),
+            Text("No posts yet",
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            SizedBox(height: 4),
+            Text(
+              "Items you report as lost or found will appear here.",
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
 }

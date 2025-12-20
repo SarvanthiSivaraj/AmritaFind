@@ -215,14 +215,23 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
                   child: ListView(
                     scrollDirection: Axis.horizontal,
                     children: [
-                      ..._uploadedUrls.map(
-                        (url) => _imageTile(
-                          Image.network(url, fit: BoxFit.cover),
+                      ..._uploadedUrls.map((url) {
+                        final safeUrl = (url ?? '').toString();
+                        final Widget widgetImg = safeUrl.isNotEmpty
+                            ? Image.network(safeUrl, fit: BoxFit.cover)
+                            : Container(
+                                color: Colors.grey.shade200,
+                                child: const Icon(Icons.broken_image,
+                                    color: Colors.grey),
+                              );
+
+                        return _imageTile(
+                          widgetImg,
                           onRemove: () {
                             setState(() => _uploadedUrls.remove(url));
                           },
-                        ),
-                      ),
+                        );
+                      }),
                       ..._selectedImages.map(
                         (img) => _imageTile(
                           kIsWeb
@@ -313,7 +322,7 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
   }
 
   // ---------------- HELPERS ----------------
-  Widget _imageTile(Image img, {required VoidCallback onRemove}) {
+  Widget _imageTile(Widget img, {required VoidCallback onRemove}) {
     return Stack(
       children: [
         Container(
