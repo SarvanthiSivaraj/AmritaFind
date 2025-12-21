@@ -4,7 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/auth_service.dart';
 
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -48,8 +47,9 @@ class _LoginScreenState extends State<LoginScreen> {
       if (user != null && user.email != null) {
         final rollNumber = _rollFromEmail(user.email!);
 
-        final ref =
-            FirebaseFirestore.instance.collection("users").doc(user.uid);
+        final ref = FirebaseFirestore.instance
+            .collection("users")
+            .doc(user.uid);
 
         final snap = await ref.get();
 
@@ -66,24 +66,24 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Login successful!")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Login successful!")));
 
       Navigator.of(context).pop(true);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
     }
 
     if (mounted) setState(() => _isSubmitting = false);
   }
 
   void _openForgotPassword() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Forgot password tapped")),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text("Forgot password tapped")));
   }
 
   Future<void> _signInWithOutlook() async {
@@ -104,8 +104,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (await canLaunchUrl(authorizeUrl)) {
-      await launchUrl(authorizeUrl,
-          mode: LaunchMode.externalApplication);
+      await launchUrl(authorizeUrl, mode: LaunchMode.externalApplication);
     }
   }
 
@@ -147,11 +146,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           BoxShadow(
                             color: Colors.black.withOpacity(0.05),
                             blurRadius: 8,
-                          )
+                          ),
                         ],
                       ),
-                      child: Image.network(
-                        'https://img.jagranjosh.com/images/2024/May/852024/Logo2.wsmf.png',
+                      child: Image.asset(
+                        'assets/logo/app_logo.png', // Use local asset
                         fit: BoxFit.contain,
                       ),
                     ),
@@ -171,10 +170,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const Text(
                       "Login to report or find lost items.",
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: Colors.grey,
-                      ),
+                      style: TextStyle(fontSize: 15, color: Colors.grey),
                     ),
 
                     const SizedBox(height: 32),
@@ -187,10 +183,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       border: border,
                       primary: primary,
                       textMuted: textMuted,
-                      validator: (v) =>
-                          v == null || !v.contains("@")
-                              ? "Enter valid email"
-                              : null,
+                      validator: (v) => v == null || !v.contains("@")
+                          ? "Enter valid email"
+                          : null,
                     ),
 
                     const SizedBox(height: 20),
@@ -211,10 +206,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           _obscurePassword = !_obscurePassword;
                         });
                       },
-                      validator: (v) =>
-                          v == null || v.length < 6
-                              ? "Minimum 6 characters"
-                              : null,
+                      validator: (v) => v == null || v.length < 6
+                          ? "Minimum 6 characters"
+                          : null,
                     ),
 
                     Align(
@@ -243,7 +237,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         child: _isSubmitting
                             ? const CircularProgressIndicator(
-                                color: Colors.white)
+                                color: Colors.white,
+                              )
                             : const Text(
                                 "Log In",
                                 style: TextStyle(
@@ -257,8 +252,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 28),
 
-                    
-
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -271,19 +264,19 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _label(String text) => Align(
-        alignment: Alignment.centerLeft,
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF1B0D0E),
-            ),
-          ),
+    alignment: Alignment.centerLeft,
+    child: Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          color: Color(0xFF1B0D0E),
         ),
-      );
+      ),
+    ),
+  );
 
   Widget _textField({
     required TextEditingController controller,
@@ -305,8 +298,10 @@ class _LoginScreenState extends State<LoginScreen> {
         hintStyle: TextStyle(color: textMuted.withOpacity(0.7)),
         filled: true,
         fillColor: Colors.white,
-        contentPadding:
-            const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 18,
+          horizontal: 16,
+        ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: border),

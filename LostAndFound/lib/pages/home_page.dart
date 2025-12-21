@@ -210,8 +210,8 @@ class _HomePageFeedState extends State<HomePageFeed> {
                 ],
               ),
               child: ClipOval(
-                child: Image.network(
-                  'https://img.jagranjosh.com/images/2024/May/852024/Logo2.wsmf.png',
+                child: Image.asset(
+                  'assets/logo/app_logo.png', // Use local asset
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) =>
                       const Icon(Icons.school, color: Colors.white, size: 20),
