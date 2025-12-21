@@ -10,15 +10,58 @@ You can download the latest version of the application for Android directly from
 
 ## Screenshots
 
-*(To add screenshots, create a folder named `screenshots` in your project's root directory, add your images there, and reference them like this: `!Login Screen`)*
+### Authentication & Feed
+<table>
+<tr>
+<td><img src="screenshots/login.png" width="220"/></td>
+<td><img src="screenshots/home_feed.png" width="220"/></td>
+<td><img src="screenshots/create_post.png" width="220"/></td>
+</tr>
+<tr>
+<td align="center"><b>Login</b></td>
+<td align="center"><b>Home Feed</b></td>
+<td align="center"><b>Create Post</b></td>
+</tr>
+</table>
 
-| Login | Home Feed | Create Post |
-| :---: | :---: | :---: |
-| *Screenshot Placeholder* | *Screenshot Placeholder* | *Screenshot Placeholder* |
-| **Chatbot** | **Profile** | **Onboarding** |
-| *Screenshot Placeholder* | *Screenshot Placeholder* | *Screenshot Placeholder* |
+### Communication & Support
+<table>
+<tr>
+<td><img src="screenshots/chat_list.png" width="220"/></td>
+<td><img src="screenshots/chat_user.png" width="220"/></td>
+<td><img src="screenshots/chatbot.png" width="220"/></td>
+</tr>
+<tr>
+<td align="center"><b>Chat List</b></td>
+<td align="center"><b>User Chat</b></td>
+<td align="center"><b>AI Chatbot</b></td>
+</tr>
+</table>
 
----
+### Profile & Onboarding
+<table>
+<tr>
+<td><img src="screenshots/profile.png" width="220"/></td>
+<td><img src="screenshots/onboarding_welcome.png" width="220"/></td>
+<td><img src="screenshots/onboarding_post_item.png" width="220"/></td>
+</tr>
+<tr>
+<td align="center"><b>Profile</b></td>
+<td align="center"><b>Welcome</b></td>
+<td align="center"><b>Post Item</b></td>
+</tr>
+</table>
+
+### Chat & Help
+<table>
+<tr>
+<td align="center">
+<img src="screenshots/onboarding_chat_help.png" width="220"/>
+</td>
+</tr>
+</table>
+
+
 
 ## Problem Statement
 
