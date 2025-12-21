@@ -85,29 +85,45 @@ Amrita University operates across multiple campuses and serves thousands of stud
 
 ```
 AmritaFind/
-├── lib/
-│   ├── main.dart
-│   ├── firebase_options.dart
-│   │
-│   ├── pages/
-│   │   ├── onboarding_screen.dart
-│   │   ├── login_page.dart
-│   │   ├── home_page.dart
-│   │   ├── post_item_form_page.dart
-│   │   ├── profile_page.dart
-│   │   ├── edit_profile_page.dart
-│   │   ├── chat_list_page.dart
-│   │   ├── chat_page.dart
-│   │   └── chat_bot_page.dart
-│   │
-│   └── services/
-│       ├── auth_service.dart
-│       ├── ai_service.dart
-│       └── chat_service.dart
+├── LostAndFound/
+│ ├── lib/
+│ │ ├── main.dart
+│ │ ├── firebase_options.dart
+│ │ │
+│ │ ├── pages/
+│ │ │ ├── onboarding_screen.dart
+│ │ │ ├── login_page.dart
+│ │ │ ├── home_page.dart
+│ │ │ ├── post_item_form_page.dart
+│ │ │ ├── profile_page.dart
+│ │ │ ├── edit_profile_page.dart
+│ │ │ ├── chat_list_page.dart
+│ │ │ ├── chat_page.dart
+│ │ │ └── chat_bot_page.dart
+│ │ │
+│ │ └── services/
+│ │ ├── auth_service.dart
+│ │ ├── ai_service.dart
+│ │ └── chat_service.dart
+│ │
+│ ├── screenshots/
+│ │ ├── login.png
+│ │ ├── home_feed.png
+│ │ ├── create_post.png
+│ │ ├── chat_list.png
+│ │ ├── chat_user.png
+│ │ ├── chatbot.png
+│ │ ├── profile.png
+│ │ ├── onboarding_welcome.png
+│ │ ├── onboarding_post_item.png
+│ │ └── onboarding_chat_help.png
+│ │
+│ ├── android/
+│ ├── ios/
+│ └── pubspec.yaml
 │
-├── android/
-├── ios/
-└── pubspec.yaml
+├── .gitignore
+└── README.md
 ```
 
 ### Technology Stack
