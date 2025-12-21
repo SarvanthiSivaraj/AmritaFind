@@ -226,25 +226,6 @@ class _HomePageFeedState extends State<HomePageFeed> {
         actions: [_buildNotificationButton(context)],
       ),
 
-      /// ADD BUTTON
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: kPrimary,
-        child: const Icon(Icons.add, color: Color(0xFFFAF9F6)),
-        onPressed: () async {
-          if (!AuthService.isLoggedIn) {
-            final ok = await Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const login.LoginScreen()),
-            );
-            if (ok != true) return;
-          }
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const PostItemFormPage()),
-          );
-        },
-      ),
-
       body: Column(
         children: [
           // SEARCH BAR
