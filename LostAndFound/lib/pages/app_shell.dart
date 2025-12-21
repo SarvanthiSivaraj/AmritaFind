@@ -8,6 +8,9 @@ import 'package:lostandfound/pages/onboarding_screen.dart';
 import 'package:lostandfound/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+const Color kNavPrimary = Color(0xFFBE1250);
+const Color kNavBg = Colors.white;
+
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
@@ -39,7 +42,9 @@ class _AppShellState extends State<AppShell> {
         await prefs.setBool('onboarding_shown_on_launch', true);
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
-          Navigator.of(context).push(MaterialPageRoute(builder: (_) => OnboardingScreen()));
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => OnboardingScreen()));
         });
       }
     } catch (_) {
@@ -60,42 +65,33 @@ class _AppShellState extends State<AppShell> {
     setState(() => _currentIndex = index);
   }
 
-  Widget _buildNavItem({required IconData icon, required String label, required int index}) {
-    final selected = _currentIndex == index;
+  Widget _buildNavItem({required IconData icon, required int index}) {
+    final bool selected = _currentIndex == index;
+
     return Expanded(
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () => _onTap(index),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 6),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 260),
-              curve: Curves.easeInOut,
-              padding: selected
-                  ? const EdgeInsets.symmetric(horizontal: 14, vertical: 10)
-                  : const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: selected ? const Color(0xFFFDE8EF) : Colors.transparent,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(
-                icon,
-                color: selected ? const Color(0xFFBE1250) : Colors.grey,
-                size: selected ? 22 : 20,
-              ),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOutCubic,
+          margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: selected
+                ? kNavPrimary.withOpacity(0.12)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: AnimatedScale(
+            duration: const Duration(milliseconds: 250),
+            scale: selected ? 1.15 : 1.0,
+            child: Icon(
+              icon,
+              size: 22,
+              color: selected ? kNavPrimary : Colors.grey.shade500,
             ),
-            const SizedBox(height: 6),
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 260),
-              style: TextStyle(
-                fontSize: 12,
-                color: selected ? const Color(0xFFBE1250) : Colors.grey,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
-              ),
-              child: Text(label),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -107,42 +103,28 @@ class _AppShellState extends State<AppShell> {
       body: IndexedStack(index: _currentIndex, children: _pages),
 
       // CUSTOM BOTTOM NAV
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12),
-          ],
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          height: 72,
+          decoration: BoxDecoration(
+            color: kNavBg,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
             children: [
-              Row(
-                children: [
-                  _buildNavItem(icon: Icons.home, label: '', index: 0),
-                  _buildNavItem(icon: Icons.support_agent,label: '', index: 1),
-
-                  // center item keeps same size, but styled like others
-                  _buildNavItem(icon: Icons.chat_bubble, label: '', index: 2),
-
-                  _buildNavItem(icon: Icons.person, label: '', index: 3),
-                ],
-              ),
-              const SizedBox(height: 8),
-              // small center handle / indicator
-              Center(
-                child: Container(
-                  width: 120,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-              ),
+              _buildNavItem(icon: Icons.home_rounded, index: 0),
+              _buildNavItem(icon: Icons.support_agent_rounded, index: 1),
+              _buildNavItem(icon: Icons.chat_bubble_rounded, index: 2),
+              _buildNavItem(icon: Icons.person_rounded, index: 3),
             ],
           ),
         ),
