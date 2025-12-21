@@ -490,7 +490,7 @@ class _HomePageFeedState extends State<HomePageFeed> {
 
                 Row(
                   children: [
-                    const Icon(Icons.location_on, size: 18, color: Colors.grey),
+                    const Icon(Icons.location_on, size: 18, color: Color(0xFFBF0C4F)),
                     const SizedBox(width: 4),
                     Text(item["location"] ?? ""),
                   ],
@@ -500,7 +500,7 @@ class _HomePageFeedState extends State<HomePageFeed> {
 
                 Row(
                   children: [
-                    const Icon(Icons.schedule, size: 18, color: Colors.grey),
+                    const Icon(Icons.schedule, size: 18, color: Color(0xFFBF0C4F)),
                     const SizedBox(width: 4),
                     Text(dateStr),
                   ],

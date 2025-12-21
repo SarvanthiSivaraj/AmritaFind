@@ -165,7 +165,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             fontSize: 18,
           ),
         ),
-        backgroundColor: Colors.transparent,
+        backgroundColor:  Color(0xFFBF0C4F),
         elevation: 1,
         centerTitle: true,
       ),
