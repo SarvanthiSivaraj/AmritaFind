@@ -32,19 +32,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       if (Navigator.canPop(context)) {
         Navigator.of(context).pop();
       } else {
-        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => HomePageFeed()));
+        Navigator.of(
+          context,
+        ).pushReplacement(MaterialPageRoute(builder: (_) => HomePageFeed()));
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Use a Column so PageView receives definite width from parent and won't overflow
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            // Top bar with Skip aligned to right
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: 12.0,
@@ -72,7 +72,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ),
 
-            // PageView inside Expanded so it gets the available width and height
             Expanded(
               child: PageView(
                 controller: _pageController,
@@ -81,7 +80,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ),
 
-            // Bottom pagination dots + Next/Finish button
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
               child: Column(
@@ -97,7 +95,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         height: 8,
                         decoration: BoxDecoration(
                           color: index == _currentPage
-                              ? Colors.red[600]
+                              ? Color(0xFFBF0C4F)
                               : Colors.grey[300],
                           borderRadius: BorderRadius.circular(4),
                         ),
@@ -110,7 +108,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     child: ElevatedButton(
                       onPressed: _goNext,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red[600],
+                        backgroundColor: Color(0xFFBF0C4F),
+                        foregroundColor: Color(0xFFFAF9F6),
                         padding: EdgeInsets.symmetric(
                           horizontal: 24,
                           vertical: 12,
@@ -134,7 +133,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 }
 
-/// Helpers for each page: each page uses LayoutBuilder + SingleChildScrollView
 class _WelcomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -152,10 +150,14 @@ class _WelcomePage extends StatelessWidget {
                     width: 140,
                     height: 140,
                     decoration: BoxDecoration(
-                      color: Colors.red[600]?.withOpacity(0.1),
+                      color: Color(0xFFBF0C4F).withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.search, size: 80, color: Colors.red[600]),
+                    child: Icon(
+                      Icons.search,
+                      size: 80,
+                      color: Color(0xFFBF0C4F),
+                    ),
                   ),
                   SizedBox(height: 24),
                   Text(
@@ -172,7 +174,7 @@ class _WelcomePage extends StatelessWidget {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  Spacer(), // push content to top when there is extra vertical space
+                  Spacer(),
                 ],
               ),
             ),
@@ -261,10 +263,10 @@ class _PostFeaturePage extends StatelessWidget {
             width: 46,
             height: 46,
             decoration: BoxDecoration(
-              color: Colors.red[600]?.withOpacity(0.1),
+              color: Color(0xFFBF0C4F).withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: Colors.red[600]),
+            child: Icon(icon, color: Color(0xFFBF0C4F)),
           ),
           SizedBox(width: 12),
           Expanded(
@@ -357,10 +359,10 @@ class _ChatBotPage extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: Colors.red[600]?.withOpacity(0.1),
+              color: Color(0xFFBF0C4F).withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: Colors.red[600], size: 28),
+            child: Icon(icon, color: Color(0xFFBF0C4F), size: 28),
           ),
           SizedBox(width: 12),
           Expanded(
