@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
-
+import 'package:lostandfound/pages/chat_bot_page.dart';
 import 'firebase_options.dart'; // <-- required for Firebase
 import 'package:lostandfound/pages/app_shell.dart';
 import 'package:lostandfound/pages/onboarding_screen.dart';
@@ -37,7 +37,7 @@ class MyApp extends StatelessWidget {
       ),
 
       /// 👇 Your app starts here
-      home: const AppShell(),
+      home: ChatbotScreen(),
     );
   }
 }
