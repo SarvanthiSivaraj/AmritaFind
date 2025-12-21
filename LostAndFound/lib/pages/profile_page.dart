@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloudinary_public/cloudinary_public.dart';
@@ -33,18 +34,37 @@ class _ProfilePageState extends State<ProfilePage> {
   Map<String, dynamic>? _profile;
   String _roll = "";
   bool _isUploadingPhoto = false;
+  StreamSubscription<User?>? _authSubscription;
 
   @override
   void initState() {
     super.initState();
-    _loadProfile();
+    // Listen to authentication state changes. This ensures the profile page
+    // automatically updates when a user logs in or out from anywhere in the app.
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((
+      User? user,
+    ) {
+      _loadProfile();
+    });
+  }
+
+  @override
+  void dispose() {
+    // Cancel the subscription when the widget is disposed to prevent memory leaks.
+    _authSubscription?.cancel();
+    super.dispose();
   }
 
   // ---------------- LOGIC ----------------
   Future<void> _loadProfile() async {
+    // Set loading state at the beginning of a profile load.
+    if (mounted) setState(() => _loading = true);
+
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null || user.email == null) {
+      // If user is logged out, clear the profile and stop loading.
+      if (!mounted) return;
       setState(() {
         _profile = null;
         _loading = false;
@@ -76,7 +96,8 @@ class _ProfilePageState extends State<ProfilePage> {
       _profile = snap.data();
     }
 
-    setState(() => _loading = false);
+    // Stop loading once profile data is fetched.
+    if (mounted) setState(() => _loading = false);
   }
 
   Future<void> _changeProfilePicture() async {

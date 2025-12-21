@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'post_item_form_page.dart';
@@ -22,6 +24,26 @@ class HomePageFeed extends StatefulWidget {
 }
 
 class _HomePageFeedState extends State<HomePageFeed> {
+  StreamSubscription<User?>? _authSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    // Listen to auth state changes to rebuild the UI (e.g., for the notification icon).
+    // This ensures that after logging in, UI elements dependent on auth state update correctly.
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
+  }
+
   String _statusFilter = "all";
   String _searchText = "";
   DateTime? _selectedDate;
@@ -490,7 +512,11 @@ class _HomePageFeedState extends State<HomePageFeed> {
 
                 Row(
                   children: [
-                    const Icon(Icons.location_on, size: 18, color: Color(0xFFBF0C4F)),
+                    const Icon(
+                      Icons.location_on,
+                      size: 18,
+                      color: Color(0xFFBF0C4F),
+                    ),
                     const SizedBox(width: 4),
                     Text(item["location"] ?? ""),
                   ],
@@ -500,7 +526,11 @@ class _HomePageFeedState extends State<HomePageFeed> {
 
                 Row(
                   children: [
-                    const Icon(Icons.schedule, size: 18, color: Color(0xFFBF0C4F)),
+                    const Icon(
+                      Icons.schedule,
+                      size: 18,
+                      color: Color(0xFFBF0C4F),
+                    ),
                     const SizedBox(width: 4),
                     Text(dateStr),
                   ],
