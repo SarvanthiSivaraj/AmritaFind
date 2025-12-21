@@ -171,8 +171,15 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       ),
       body: Padding(
         // This padding pushes the entire body up to avoid the main app's
-        // floating navigation bar, which is roughly 90px tall.
-        padding: const EdgeInsets.only(bottom: 90),
+        // floating navigation bar.
+        // Calculation:
+        // 72px (nav bar container height)
+        // 14px (nav bar bottom padding from AppShell)
+        // 18px (FAB overhang from nav bar)
+        //  8px (extra visual gap for better UI)
+        // ---
+        // 112px total padding needed.
+        padding: const EdgeInsets.only(bottom: 112),
         child: Column(
           children: [
             Expanded(
