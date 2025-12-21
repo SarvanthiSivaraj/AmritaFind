@@ -654,7 +654,6 @@ class _ModernTextField extends StatelessWidget {
     required this.icon,
     this.maxLines = 1,
     this.keyboardType = TextInputType.text,
-    this.helperText,
   });
 
   @override

@@ -255,7 +255,7 @@ class NotificationsPage extends StatelessWidget {
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => ChatPage(
-                                    receiverId: posterUid!,
+                                    receiverId: posterUid,
                                     itemContext:
                                         "Re: ${itemData['item_name'] ?? 'Found Item'}",
                                   ),
