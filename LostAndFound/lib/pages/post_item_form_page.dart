@@ -227,7 +227,7 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
             color: kTextPrimary,
             size: 20,
           ),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.of(context).maybePop(),
         ),
         title: Text(
           isEdit ? "Edit Details" : "Create Post",

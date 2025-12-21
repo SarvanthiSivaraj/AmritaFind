@@ -153,10 +153,6 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F6F6),
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black87),
-          onPressed: () => Navigator.pop(context),
-        ),
         title: const Text(
           'Chatbot Support',
           style: TextStyle(
