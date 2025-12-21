@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-
 import 'package:lostandfound/services/ai_service.dart';
 
 class ChatbotScreen extends StatefulWidget {
@@ -23,19 +21,16 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  // AI Service for the backend, initialized in initState.
+
   late final AiService _aiService;
 
   @override
   void initState() {
     super.initState();
-    // Initialize the AiService to call Google Gemini directly.
-    // The API key is loaded from the .env file.
     _aiService = AiService(
       apiKey: dotenv.env['GEMINI_API_KEY'] ?? '',
       model: 'gemini-2.5-flash',
     );
-    _scrollToBottom();
   }
 
   void _scrollToBottom() {
@@ -50,102 +45,56 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     });
   }
 
-  void _sendMessage() async {
+  Future<void> _sendMessage() async {
     if (_controller.text.trim().isEmpty) return;
 
-    final userMessageText = _controller.text.trim();
-    final message = ChatMessage(
-      isUser: true,
-      text: userMessageText,
-      time: DateTime.now(),
-    );
+    final userText = _controller.text.trim();
+    _controller.clear();
 
     setState(() {
-      // Add user message and a temporary typing indicator
-      _messages.add(message);
-      _messages.add(
-        ChatMessage(
-          isUser: false,
-          text: "Typing...",
-          time: DateTime.now(),
-          isTyping: true,
-        ),
-      );
+      _messages.add(ChatMessage(
+        isUser: true,
+        text: userText,
+        time: DateTime.now(),
+      ));
+      _messages.add(ChatMessage(
+        isUser: false,
+        text: '',
+        time: DateTime.now(),
+        isTyping: true,
+      ));
     });
 
-    _controller.clear();
     _scrollToBottom();
 
-    // Get bot response from our backend proxy
     try {
-      // Add a check for the API key before making the call
-      if (_aiService.apiKey.isEmpty) {
-        throw Exception(
-          'API Key is missing. Is GEMINI_API_KEY set in your .env file?',
-        );
-      }
-
-      // Construct the full prompt with system instructions for the chatbot.
       const systemPrompt =
           'You are the LostAndFound assistant for a university lost-and-found app. '
-          'Only respond with helpful, concise information related to lost and found items, reports, locations, and recovery steps for this app. '
-          'Do NOT provide unrelated information, personal opinions, or external links. Keep style consistent with short helpful messages.';
+          'Respond concisely and helpfully only about lost and found items.';
 
-      final fullPrompt = '$systemPrompt\n\nUser: $userMessageText\nAssistant:';
+      final response =
+          await _aiService.sendMessage('$systemPrompt\nUser: $userText');
 
-      final botResponse = await _aiService.sendMessage(fullPrompt);
-      if (mounted) {
-        setState(() {
-          // Remove typing indicator and add bot's response
-          _messages.removeWhere((m) => m.isTyping);
-          _messages.add(
-            ChatMessage(isUser: false, text: botResponse, time: DateTime.now()),
-          );
-        });
-      }
-    } catch (e, s) {
-      // Log the full error and stack trace to the debug console for more details.
-      print('--- ERROR SENDING MESSAGE ---');
-      print('Exception: $e');
-      print('Stack Trace: $s');
-      print('-----------------------------');
-
-      if (mounted) {
-        // Display the specific error message in the chat UI for better debugging.
-        String displayError = e.toString();
-        // Clean up the exception text for better readability in the UI.
-        if (displayError.startsWith('Exception: ')) {
-          displayError = displayError.substring('Exception: '.length);
-        }
-        // Provide a more helpful message for Gemini API errors.
-        if (displayError.contains('Status: 400')) {
-          displayError =
-              'Bad request (400). Please check your GEMINI_API_KEY. It might be invalid or missing billing information on your Google Cloud account.';
-        } else if (displayError.contains('Status: 404')) {
-          displayError =
-              'Model not found (404). Ensure the model name is correct and the "Generative Language API" is enabled in your Google Cloud project.';
-        } else if (displayError.contains('Status: 429')) {
-          displayError =
-              'Too many requests (429). You have exceeded your API quota. Please wait and try again later, or check your Google Cloud billing status.';
-        }
-
-        setState(() {
-          // Remove typing indicator and show an error message
-          _messages.removeWhere((m) => m.isTyping);
-          _messages.add(
-            ChatMessage(
-              isUser: false,
-              text: 'Error: $displayError',
-              time: DateTime.now(),
-            ),
-          );
-        });
-      }
-    } finally {
-      if (mounted) {
-        _scrollToBottom();
-      }
+      setState(() {
+        _messages.removeWhere((m) => m.isTyping);
+        _messages.add(ChatMessage(
+          isUser: false,
+          text: response,
+          time: DateTime.now(),
+        ));
+      });
+    } catch (e) {
+      setState(() {
+        _messages.removeWhere((m) => m.isTyping);
+        _messages.add(ChatMessage(
+          isUser: false,
+          text: 'Error: ${e.toString()}',
+          time: DateTime.now(),
+        ));
+      });
     }
+
+    _scrollToBottom();
   }
 
   @override
@@ -153,24 +102,58 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F6F6),
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black87),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Chatbot Support',
-          style: TextStyle(
-            color: Colors.black87,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        backgroundColor:  Color(0xFFBF0C4F),
-        elevation: 1,
-        centerTitle: true,
+  elevation: 2,
+  shadowColor: Colors.black12,
+  backgroundColor: Colors.white,
+  shape: const RoundedRectangleBorder(
+    borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+  ),
+  leading: IconButton(
+    icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFFBF0C4F), size: 20),
+    onPressed: () => Navigator.pop(context),
+  ),
+  titleSpacing: 0,
+  title: Row(
+    children: [
+      const CircleAvatar(
+        radius: 18,
+        backgroundColor: Color(0xFFBF0C4F),
+        child: Icon(Icons.smart_toy_rounded, color: Colors.white, size: 20),
       ),
+      const SizedBox(width: 10),
+      // THIS WIDGET FIXES THE OVERFLOW
+      Expanded( 
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min, // Keeps column compact
+          children: const [
+            Text(
+              'AmritaFind Assistant',
+              overflow: TextOverflow.ellipsis, // Adds '...' if name is too long
+              style: TextStyle(
+                color: Color(0xFF2D2D2D),
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              'Online',
+              style: TextStyle(
+                color: Colors.green,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ],
+  ),
+  
+),
       body: Column(
         children: [
+          // CHAT LIST
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
@@ -178,207 +161,26 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final message = _messages[index];
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                  child: Align(
-                    alignment: message.isUser
-                        ? Alignment.centerRight
-                        : Alignment.centerLeft,
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          if (!message.isUser) ...[
-                            CircleAvatar(
-                              radius: 20,
-                              backgroundImage: const NetworkImage(
-                                'https://lh3.googleusercontent.com/aida-public/AB6AXuB1NkyUIDsLii5S5S3naRGIud_2aPn7iBKf68hr_dGvX8-ADlN-6TmAclfVTwEpTMK5LdC9u-s2TSRqTMkJ6wclgzbasLsPJz2YXnRVJ1iNIiZc6FXx68YzYcFDMGEQrJrMh-4XkYIaN-MmOyPUMLb4gTBu1x0a1A7XZxlrZTah-CBc0DUBygzc9_vRXejE_KoULVgYGHDQEpl9zueR6DQkicBj6iOlWx8uA4Ywyq1tmaGGKEAYPzM6JF29XHOrqgSYJBgZNnKDEQhq',
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                          ],
-                          Flexible(
-                            child: Container(
-                              constraints: BoxConstraints(
-                                maxWidth:
-                                    MediaQuery.of(context).size.width * 0.75,
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                color: message.isUser
-                                    ? const Color(0xFFBF0C4F)
-                                    : Colors.white,
-                                borderRadius: BorderRadius.only(
-                                  topLeft: const Radius.circular(20),
-                                  topRight: const Radius.circular(20),
-                                  bottomLeft: message.isUser
-                                      ? const Radius.circular(20)
-                                      : const Radius.circular(4),
-                                  bottomRight: message.isUser
-                                      ? const Radius.circular(4)
-                                      : const Radius.circular(20),
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: message.isUser
-                                    ? CrossAxisAlignment.end
-                                    : CrossAxisAlignment.start,
-                                children: [
-                                  if (!message.isUser)
-                                    Text(
-                                      'Help Assistant',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    message.text,
-                                    style: TextStyle(
-                                      color: message.isUser
-                                          ? Colors.white
-                                          : Colors.black87,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  if (!message.isTyping) ...[
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      _formatTime(message.time),
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: message.isUser
-                                            ? Colors.white70
-                                            : Colors.grey[500],
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          ),
-                          if (message.isUser) ...[
-                            const SizedBox(width: 12),
-                            const CircleAvatar(
-                              radius: 20,
-                              backgroundColor: Color(0xFFBF0C4F),
-                              child: Icon(
-                                Icons.person,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                );
+
+                if (message.isTyping) return const SizedBox.shrink();
+
+                return _ChatBubble(message: message);
               },
             ),
           ),
-          // Input Area
-          // Input Area
-          Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8F6F6),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      minHeight: 48,
-                      maxHeight: 160, // ❗ TextField can grow up to 6–7 lines
-                    ),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 4,
-                          ),
-                        ],
-                      ),
-                      child: TextField(
-                        controller: _controller,
-                        keyboardType: TextInputType.multiline,
-                        textInputAction: TextInputAction.newline,
-                        minLines: 1,
-                        maxLines: 6, // ❗ Multiline enabled and visible
-                        textAlignVertical: TextAlignVertical.top,
-                        decoration: InputDecoration(
-                          hintText: 'Ask about a lost item...',
-                          hintStyle: TextStyle(color: Colors.grey[500]),
-                          border: InputBorder.none,
-                          isCollapsed: true,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
 
-                const SizedBox(width: 12),
+          // TYPING INDICATOR (ALWAYS ABOVE INPUT)
+          if (_messages.any((m) => m.isTyping))
+            const _AssistantTypingIndicator(),
 
-                GestureDetector(
-                  onTap: _sendMessage,
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFBF0C4F),
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFBF0C4F).withOpacity(0.3),
-                          blurRadius: 8,
-                        ),
-                      ],
-                    ),
-                    child: const Icon(Icons.send, color: Colors.white),
-                  ),
-                ),
-              ],
-            ),
+          // INPUT BAR (ALWAYS VISIBLE)
+          _ChatInputBar(
+            controller: _controller,
+            onSend: _sendMessage,
           ),
         ],
       ),
     );
-  }
-
-  String _formatTime(DateTime time) {
-    final now = DateTime.now();
-    if (now.difference(time).inMinutes < 1) return 'Just now';
-    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -388,6 +190,10 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     super.dispose();
   }
 }
+
+////////////////////////////////////////////////////////////
+/// MODELS
+////////////////////////////////////////////////////////////
 
 class ChatMessage {
   final bool isUser;
@@ -401,4 +207,186 @@ class ChatMessage {
     required this.time,
     this.isTyping = false,
   });
+}
+
+////////////////////////////////////////////////////////////
+/// CHAT BUBBLE
+////////////////////////////////////////////////////////////
+
+class _ChatBubble extends StatelessWidget {
+  final ChatMessage message;
+
+  const _ChatBubble({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment:
+          message.isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        constraints:
+            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+        decoration: BoxDecoration(
+          color: message.isUser
+              ? const Color(0xFFBF0C4F)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 4,
+            ),
+          ],
+        ),
+        child: Text(
+          message.text,
+          style: TextStyle(
+            color: message.isUser ? Colors.white : Colors.black87,
+            fontSize: 15,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+////////////////////////////////////////////////////////////
+/// INPUT BAR
+////////////////////////////////////////////////////////////
+
+class _ChatInputBar extends StatelessWidget {
+  final TextEditingController controller;
+  final VoidCallback onSend;
+
+  const _ChatInputBar({
+    required this.controller,
+    required this.onSend,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: const BoxDecoration(
+          color: Color(0xFFF8F6F6),
+          boxShadow: [
+            BoxShadow(color: Colors.black12, blurRadius: 6),
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: TextField(
+                  controller: controller,
+                  minLines: 1,
+                  maxLines: 6,
+                  decoration: const InputDecoration(
+                    hintText: 'Ask about a lost item...',
+                    border: InputBorder.none,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            GestureDetector(
+              onTap: onSend,
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFBF0C4F),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: const Icon(Icons.send, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+////////////////////////////////////////////////////////////
+/// ASSISTANT TYPING INDICATOR
+////////////////////////////////////////////////////////////
+
+class _AssistantTypingIndicator extends StatelessWidget {
+  const _AssistantTypingIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Row(
+        children: [
+          const CircleAvatar(
+            radius: 16,
+            backgroundColor: Color(0xFFBF0C4F),
+            child: Icon(Icons.smart_toy, color: Colors.white, size: 18),
+          ),
+          const SizedBox(width: 10),
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: const _TypingDots(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TypingDots extends StatefulWidget {
+  const _TypingDots();
+
+  @override
+  State<_TypingDots> createState() => _TypingDotsState();
+}
+
+class _TypingDotsState extends State<_TypingDots>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller =
+        AnimationController(vsync: this, duration: const Duration(seconds: 1))
+          ..repeat();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (_, __) {
+        final dots = (_controller.value * 3).floor() + 1;
+        return Text(
+          'Typing${'.' * dots}',
+          style: const TextStyle(color: Colors.grey),
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 }
