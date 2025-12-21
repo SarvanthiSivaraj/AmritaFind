@@ -1,395 +1,219 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'chat_page.dart';
+import 'chat_page.dart'; // Ensure this import is correct for your project
 
-const Color kPrimary = Color(0xFFBE1250);
-const Color kPrimaryDark = Color(0xFF8F0D3B);
-const Color kPrimaryLight = Color(0xFFFDE8EF);
-const Color kBackgroundLight = Color(0xFFF9FAFB);
-const Color kSurfaceLight = Colors.white;
-const Color kTextMain = Color(0xFF1F2937);
-const Color kTextMuted = Color(0xFF6B7280);
+// --- Modern Color Palette ---
+class AppColors {
+  static const Color primary = Color(0xFFBE1250);
+  static const Color primaryDark = Color(0xFF8F0D3B);
+  static const Color primaryLight = Color(0xFFFFF0F5); // Softer pink
+  static const Color background = Color(0xFFF2F4F8); // Blue-grey tint for depth
+  static const Color surface = Colors.white;
+  static const Color textMain = Color(0xFF111827);
+  static const Color textBody = Color(0xFF6B7280);
+  static const Color textLight = Color(0xFF9CA3AF);
+}
 
 class NotificationsPage extends StatelessWidget {
   const NotificationsPage({super.key});
 
+  // --- Logic: Handle Tap ---
   Future<void> _onNotificationTapped(
     BuildContext context,
     DocumentSnapshot notificationDoc,
   ) async {
     final data = notificationDoc.data() as Map<String, dynamic>;
 
-    // Mark as read in Firestore
+    // 1. Mark as read immediately for UI responsiveness
     if (data['isRead'] == false) {
-      await notificationDoc.reference.update({'isRead': true});
+      notificationDoc.reference.update({'isRead': true});
     }
 
-    // Fetch the found item's data to show it
+    // 2. Fetch Item Data
     final foundItemId = data['foundItemId'];
-    final foundItemDoc = await FirebaseFirestore.instance
-        .collection('found_items')
-        .doc(foundItemId)
-        .get();
+    try {
+      final foundItemDoc = await FirebaseFirestore.instance
+          .collection('found_items')
+          .doc(foundItemId)
+          .get();
 
-    if (!foundItemDoc.exists || !context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            "The matched item could not be found. It may have been deleted.",
+      if (!context.mounted) return;
+
+      if (!foundItemDoc.exists) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.red.shade400,
+            behavior: SnackBarBehavior.floating,
+            content: const Text("Item not found. It may have been deleted."),
           ),
-        ),
-      );
-      return;
-    }
+        );
+        return;
+      }
 
-    final foundData = foundItemDoc.data()!;
-    final posterUid = foundData['uid'] as String?;
+      // 3. Show Bottom Sheet details
+      _showItemDetailsSheet(context, foundItemDoc.data()!);
+    } catch (e) {
+      debugPrint("Error fetching item: $e");
+    }
+  }
+
+  // --- UI: Item Details Bottom Sheet ---
+  void _showItemDetailsSheet(
+    BuildContext context,
+    Map<String, dynamic> itemData,
+  ) {
+    final posterUid = itemData['uid'] as String?;
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     final canChat = posterUid != null && posterUid != currentUserId;
 
-    // Show a custom dialog that matches the desired UI
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      barrierDismissible: true,
-      barrierColor: Colors.black.withOpacity(0.4),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Center(
-            child: Container(
-              margin: const EdgeInsets.all(8),
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: kPrimaryLight,
-                borderRadius: BorderRadius.circular(32),
+        return Container(
+          decoration: const BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 30),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Drag Handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 24),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+
+              // Header
+              Row(
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: const Icon(
-                          Icons.inventory_2,
-                          color: kPrimary,
-                          size: 30,
-                        ),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    "Matched Item Found",
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    "Is this the item you lost?",
-                    style: TextStyle(color: kTextMuted),
-                  ),
-                  const SizedBox(height: 16),
                   Container(
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
+                      color: AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Row(
+                    child: const Icon(
+                      Icons.check_circle,
+                      color: AppColors.primary,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          width: 70,
-                          height: 70,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade200,
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: const Icon(
-                            Icons.image,
-                            color: Colors.grey,
-                            size: 36,
+                        Text(
+                          "Potential Match",
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textMain,
                           ),
                         ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                foundData['item_name'] ?? 'No name',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                foundData['description'] ?? '',
-                                style: const TextStyle(color: kTextMuted),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                foundData['location'] ?? 'Unknown location',
-                                style: const TextStyle(
-                                  color: kPrimary,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
+                        Text(
+                          "Is this the item you lost?",
+                          style: TextStyle(
+                            color: AppColors.textBody,
+                            fontSize: 14,
                           ),
-                        )
+                        ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: kPrimary,
-                      minimumSize: const Size.fromHeight(52),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    onPressed: canChat
-                        ? () {
-                            Navigator.of(context).pop();
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => ChatPage(
-                                  receiverId: posterUid!,
-                                  itemContext:
-                                      "Regarding: ${foundData['item_name'] ?? 'Item'}",
-                                ),
-                              ),
-                            );
-                          }
-                        : null,
-                    icon: const Icon(Icons.chat, color: Colors.white),
-                    label: const Text(
-                      "Chat with Finder",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  
                 ],
               ),
-            ),
-          ),
-        );
-      },
-    );
-  }
 
-  @override
-  Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+              const SizedBox(height: 24),
 
-    if (user == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text("Notifications")),
-        body: const Center(child: Text("Please log in to see notifications.")),
-      );
-    }
-
-    return Scaffold(
-      backgroundColor: kBackgroundLight,
-
-      // HEADER
-      appBar: AppBar(
-        backgroundColor: kPrimary,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-        title: const Text(
-          "Notifications",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        
-      ),
-
-      body: Stack(
-        children: [
-          StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('notifications')
-                .where('userId', isEqualTo: user.uid)
-                .orderBy('timestamp', descending: true)
-                .snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return const Center(child: Text("No notifications yet."));
-              }
-
-              final notifications = snapshot.data!.docs;
-
-              return ListView(
+              // Item Card
+              Container(
                 padding: const EdgeInsets.all(16),
-                children: [
-                  Center(
-                    child: Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        "Today",
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: kTextMuted,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  ...notifications.map((doc) {
-                    final data = doc.data() as Map<String, dynamic>;
-                    final bool isRead = data['isRead'] ?? false;
-                    // compute simple time label
-                    String timeLabel = '';
-                    final ts = data['timestamp'];
-                    if (ts is Timestamp) {
-                      final diff = DateTime.now().difference(ts.toDate());
-                      if (diff.inMinutes < 60) {
-                        timeLabel = '${diff.inMinutes} min ago';
-                      } else if (diff.inHours < 24) {
-                        timeLabel = '${diff.inHours} hrs ago';
-                      } else {
-                        timeLabel = '${diff.inDays} days ago';
-                      }
-                    } else {
-                      timeLabel = data['time'] ?? '';
-                    }
-
-                    return _notificationCard(
-                      unread: !isRead,
-                      icon: isRead ? Icons.notifications_off_outlined : Icons.notifications_active,
-                      title: data['title'] ?? 'Notification',
-                      body: data['body'] ?? '',
-                      time: timeLabel,
-                      onTap: () => _onNotificationTapped(context, doc),
-                    );
-                  }).toList(),
-
-                  const SizedBox(height: 120),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-
-      
-    );
-  }
-
-  Widget _notificationCard({
-    required IconData icon,
-    required String title,
-    required String body,
-    required String time,
-    required VoidCallback onTap,
-    bool unread = false,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      child: Row(
-        children: [
-          if (unread)
-            Container(
-              width: 4,
-              height: 70,
-              decoration: const BoxDecoration(
-                color: kPrimary,
-                borderRadius: BorderRadius.horizontal(
-                  right: Radius.circular(8),
-                ),
-              ),
-            ),
-          Expanded(
-            child: InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: kSurfaceLight,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 10,
-                    )
-                  ],
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: Row(
                   children: [
+                    // Image Placeholder
                     Container(
-                      padding: const EdgeInsets.all(10),
+                      width: 80,
+                      height: 80,
                       decoration: BoxDecoration(
-                        color: unread ? kPrimaryLight : Colors.grey.shade200,
-                        shape: BoxShape.circle,
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(16),
+                        image: itemData['imageUrl'] != null
+                            ? DecorationImage(
+                                image: NetworkImage(itemData['imageUrl']),
+                                fit: BoxFit.cover,
+                              )
+                            : null,
                       ),
-                      child: Icon(icon, color: kPrimary),
+                      child: itemData['imageUrl'] == null
+                          ? const Icon(
+                              Icons.image_not_supported,
+                              color: Colors.grey,
+                            )
+                          : null,
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Text(
+                            itemData['item_name'] ?? 'Unknown Item',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                              color: AppColors.textMain,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
                           Row(
                             children: [
+                              const Icon(
+                                Icons.location_on,
+                                size: 14,
+                                color: AppColors.primary,
+                              ),
+                              const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
-                                  title,
+                                  itemData['location'] ?? 'Unknown Location',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                    color: AppColors.textBody,
+                                    fontWeight: FontWeight.w500,
                                   ),
-                                ),
-                              ),
-                              Text(
-                                time,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: kTextMuted,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 6),
                           Text(
-                            body,
+                            itemData['description'] ??
+                                'No description provided',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              fontSize: 13,
-                              color: kTextMuted,
+                              fontSize: 12,
+                              color: AppColors.textLight,
                             ),
                           ),
                         ],
@@ -398,9 +222,345 @@ class NotificationsPage extends StatelessWidget {
                   ],
                 ),
               ),
+
+              const SizedBox(height: 28),
+
+              // Actions
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        side: BorderSide(color: Colors.grey.shade300),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Text(
+                        "Close",
+                        style: TextStyle(color: AppColors.textMain),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton.icon(
+                      onPressed: canChat
+                          ? () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ChatPage(
+                                    receiverId: posterUid!,
+                                    itemContext:
+                                        "Re: ${itemData['item_name'] ?? 'Found Item'}",
+                                  ),
+                                ),
+                              );
+                            }
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      icon: const Icon(
+                        Icons.chat_bubble_outline,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      label: const Text(
+                        "Contact Finder",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // --- Main Build ---
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return const Scaffold(body: Center(child: Text("Please log in.")));
+    }
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: AppColors.textMain,
+            size: 20,
+          ),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+        title: const Text(
+          "Notifications",
+          style: TextStyle(
+            color: AppColors.textMain,
+            fontWeight: FontWeight.w800,
+            fontSize: 24,
+          ),
+        ),
+        actions: [
+          IconButton(
+            onPressed: () {
+              // Logic to clear all can go here
+            },
+            icon: const Icon(Icons.done_all, color: AppColors.textBody),
+            tooltip: "Mark all as read",
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('notifications')
+            .where('userId', isEqualTo: user.uid)
+            .orderBy('timestamp', descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            );
+          }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return _buildEmptyState();
+          }
+
+          final notifications = snapshot.data!.docs;
+
+          return ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            itemCount: notifications.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final doc = notifications[index];
+              final data = doc.data() as Map<String, dynamic>;
+
+              return _ModernNotificationCard(
+                data: data,
+                onTap: () => _onNotificationTapped(context, doc),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.notifications_none_rounded,
+              size: 60,
+              color: Colors.grey.shade400,
             ),
           ),
+          const SizedBox(height: 24),
+          const Text(
+            "No notifications yet",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textMain,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            "We'll let you know when we find a match!",
+            style: TextStyle(color: AppColors.textBody),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+// --- Component: Modern Notification Card ---
+class _ModernNotificationCard extends StatelessWidget {
+  final Map<String, dynamic> data;
+  final VoidCallback onTap;
+
+  const _ModernNotificationCard({required this.data, required this.onTap});
+
+  String _getTimeLabel(dynamic timestamp) {
+    if (timestamp is Timestamp) {
+      final diff = DateTime.now().difference(timestamp.toDate());
+      if (diff.inMinutes < 1) return 'Just now';
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+      if (diff.inHours < 24) return '${diff.inHours}h ago';
+      return '${diff.inDays}d ago';
+    }
+    return '';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isRead = data['isRead'] ?? false;
+    final String timeLabel = _getTimeLabel(data['timestamp']);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isRead
+                ? AppColors.surface.withOpacity(0.6)
+                : AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: isRead
+                ? Border.all(color: Colors.transparent)
+                : Border.all(color: AppColors.primary.withOpacity(0.1)),
+            boxShadow: [
+              if (!isRead)
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.08),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              if (isRead)
+                const BoxShadow(
+                  color: Colors.transparent, // Flat when read
+                ),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Icon Status
+              Stack(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isRead
+                          ? Colors.grey.shade100
+                          : AppColors.primaryLight,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.inventory_2_outlined,
+                      color: isRead ? Colors.grey : AppColors.primary,
+                      size: 24,
+                    ),
+                  ),
+                  if (!isRead)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(width: 16),
+
+              // Text Content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            data['title'] ?? 'Notification',
+                            style: TextStyle(
+                              fontWeight: isRead
+                                  ? FontWeight.w600
+                                  : FontWeight.bold,
+                              fontSize: 15,
+                              color: AppColors.textMain,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          timeLabel,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isRead
+                                ? AppColors.textLight
+                                : AppColors.primary,
+                            fontWeight: isRead
+                                ? FontWeight.normal
+                                : FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      data['body'] ?? '',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isRead
+                            ? AppColors.textLight
+                            : AppColors.textBody,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

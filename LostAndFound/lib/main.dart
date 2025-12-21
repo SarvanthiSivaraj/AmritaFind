@@ -37,7 +37,7 @@ class MyApp extends StatelessWidget {
       ),
 
       /// 👇 Your app starts here
-      home: ChatbotScreen(),
+      home: AppShell(),
     );
   }
 }
