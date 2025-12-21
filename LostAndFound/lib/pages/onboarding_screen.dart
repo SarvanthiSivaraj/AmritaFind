@@ -29,9 +29,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         curve: Curves.ease,
       );
     } else {
-      Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (_) => HomePageFeed()));
+      if (Navigator.canPop(context)) {
+        Navigator.of(context).pop();
+      } else {
+        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => HomePageFeed()));
+      }
     }
   }
 
@@ -53,9 +55,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   Spacer(),
                   TextButton(
                     onPressed: () {
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(builder: (_) => HomePageFeed()),
-                      );
+                      if (Navigator.canPop(context)) {
+                        Navigator.of(context).pop();
+                      } else {
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(builder: (_) => HomePageFeed()),
+                        );
+                      }
                     },
                     child: Text(
                       'Skip',
