@@ -4,6 +4,8 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/services.dart';
 import 'post_item_form_page.dart';
 import 'chat_page.dart';
 import 'chat_list_page.dart';
@@ -452,6 +454,7 @@ class _HomePageFeedState extends State<HomePageFeed> {
     // 🔥 FIX: ITEM NAME (support both formats)
     final String title =
         item["item_name"] ?? item["itemName"] ?? "Unnamed Item";
+    final String contact = item["contact"]?.toString() ?? "";
 
     return Container(
       margin: const EdgeInsets.all(12),
@@ -535,6 +538,37 @@ class _HomePageFeedState extends State<HomePageFeed> {
                     Text(dateStr),
                   ],
                 ),
+
+                if (contact.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(4),
+                    onTap: () async {
+                      final Uri telUri = Uri.parse('tel:$contact');
+                      if (await canLaunchUrl(telUri)) {
+                        await launchUrl(telUri);
+                      } else {
+                        await Clipboard.setData(ClipboardData(text: contact));
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Could not open dialer. Number copied to clipboard.',
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.phone, size: 18, color: kPrimary),
+                        const SizedBox(width: 4),
+                        Text(contact),
+                      ],
+                    ),
+                  ),
+                ],
 
                 const SizedBox(height: 12),
 
