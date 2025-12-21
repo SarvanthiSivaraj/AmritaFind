@@ -169,208 +169,208 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         elevation: 1,
         centerTitle: true,
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final message = _messages[index];
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                  child: Align(
-                    alignment: message.isUser
-                        ? Alignment.centerRight
-                        : Alignment.centerLeft,
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          if (!message.isUser) ...[
-                            CircleAvatar(
-                              radius: 20,
-                              backgroundImage: const NetworkImage(
-                                'https://lh3.googleusercontent.com/aida-public/AB6AXuB1NkyUIDsLii5S5S3naRGIud_2aPn7iBKf68hr_dGvX8-ADlN-6TmAclfVTwEpTMK5LdC9u-s2TSRqTMkJ6wclgzbasLsPJz2YXnRVJ1iNIiZc6FXx68YzYcFDMGEQrJrMh-4XkYIaN-MmOyPUMLb4gTBu1x0a1A7XZxlrZTah-CBc0DUBygzc9_vRXejE_KoULVgYGHDQEpl9zueR6DQkicBj6iOlWx8uA4Ywyq1tmaGGKEAYPzM6JF29XHOrqgSYJBgZNnKDEQhq',
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                          ],
-                          Flexible(
-                            child: Container(
-                              constraints: BoxConstraints(
-                                maxWidth:
-                                    MediaQuery.of(context).size.width * 0.75,
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                color: message.isUser
-                                    ? const Color(0xFFBF0C4F)
-                                    : Colors.white,
-                                borderRadius: BorderRadius.only(
-                                  topLeft: const Radius.circular(20),
-                                  topRight: const Radius.circular(20),
-                                  bottomLeft: message.isUser
-                                      ? const Radius.circular(20)
-                                      : const Radius.circular(4),
-                                  bottomRight: message.isUser
-                                      ? const Radius.circular(4)
-                                      : const Radius.circular(20),
+      body: Padding(
+        // This padding pushes the entire body up to avoid the main app's
+        // floating navigation bar, which is roughly 90px tall.
+        padding: const EdgeInsets.only(bottom: 90),
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                controller: _scrollController,
+                padding: const EdgeInsets.all(16),
+                itemCount: _messages.length,
+                itemBuilder: (context, index) {
+                  final message = _messages[index];
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    child: Align(
+                      alignment: message.isUser
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            if (!message.isUser) ...[
+                              CircleAvatar(
+                                radius: 20,
+                                backgroundImage: const NetworkImage(
+                                  'https://lh3.googleusercontent.com/aida-public/AB6AXuB1NkyUIDsLii5S5S3naRGIud_2aPn7iBKf68hr_dGvX8-ADlN-6TmAclfVTwEpTMK5LdC9u-s2TSRqTMkJ6wclgzbasLsPJz2YXnRVJ1iNIiZc6FXx68YzYcFDMGEQrJrMh-4XkYIaN-MmOyPUMLb4gTBu1x0a1A7XZxlrZTah-CBc0DUBygzc9_vRXejE_KoULVgYGHDQEpl9zueR6DQkicBj6iOlWx8uA4Ywyq1tmaGGKEAYPzM6JF29XHOrqgSYJBgZNnKDEQhq',
                                 ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
                               ),
-                              child: Column(
-                                crossAxisAlignment: message.isUser
-                                    ? CrossAxisAlignment.end
-                                    : CrossAxisAlignment.start,
-                                children: [
-                                  if (!message.isUser)
-                                    Text(
-                                      'Help Assistant',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    message.text,
-                                    style: TextStyle(
-                                      color: message.isUser
-                                          ? Colors.white
-                                          : Colors.black87,
-                                      fontSize: 16,
-                                    ),
+                              const SizedBox(width: 12),
+                            ],
+                            Flexible(
+                              child: Container(
+                                constraints: BoxConstraints(
+                                  maxWidth:
+                                      MediaQuery.of(context).size.width * 0.75,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: message.isUser
+                                      ? const Color(0xFFBF0C4F)
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: const Radius.circular(20),
+                                    topRight: const Radius.circular(20),
+                                    bottomLeft: message.isUser
+                                        ? const Radius.circular(20)
+                                        : const Radius.circular(4),
+                                    bottomRight: message.isUser
+                                        ? const Radius.circular(4)
+                                        : const Radius.circular(20),
                                   ),
-                                  if (!message.isTyping) ...[
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      _formatTime(message.time),
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: message.isUser
-                                            ? Colors.white70
-                                            : Colors.grey[500],
-                                      ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
                                     ),
                                   ],
-                                ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: message.isUser
+                                      ? CrossAxisAlignment.end
+                                      : CrossAxisAlignment.start,
+                                  children: [
+                                    if (!message.isUser)
+                                      Text(
+                                        'Help Assistant',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      message.text,
+                                      style: TextStyle(
+                                        color: message.isUser
+                                            ? Colors.white
+                                            : Colors.black87,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    if (!message.isTyping) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        _formatTime(message.time),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: message.isUser
+                                              ? Colors.white70
+                                              : Colors.grey[500],
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                          if (message.isUser) ...[
-                            const SizedBox(width: 12),
-                            const CircleAvatar(
-                              radius: 20,
-                              backgroundColor: Color(0xFFBF0C4F),
-                              child: Icon(
-                                Icons.person,
-                                color: Colors.white,
-                                size: 20,
+                            if (message.isUser) ...[
+                              const SizedBox(width: 12),
+                              const CircleAvatar(
+                                radius: 20,
+                                backgroundColor: Color(0xFFBF0C4F),
+                                child: Icon(
+                                  Icons.person,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
                               ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            // Input Area
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8F6F6),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        minHeight: 48,
+                        maxHeight: 160, // ❗ TextField can grow up to 6–7 lines
+                      ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 4,
                             ),
                           ],
-                        ],
+                        ),
+                        child: TextField(
+                          controller: _controller,
+                          keyboardType: TextInputType.multiline,
+                          textInputAction: TextInputAction.newline,
+                          minLines: 1,
+                          maxLines: 6, // ❗ Multiline enabled and visible
+                          decoration: InputDecoration(
+                            hintText: 'Ask about a lost item...',
+                            hintStyle: TextStyle(color: Colors.grey[500]),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                );
-              },
-            ),
-          ),
-          // Input Area
-          // Input Area
-          Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8F6F6),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      minHeight: 48,
-                      maxHeight: 160, // ❗ TextField can grow up to 6–7 lines
-                    ),
+                  const SizedBox(width: 12),
+                  GestureDetector(
+                    onTap: _sendMessage,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
+                      width: 48,
+                      height: 48,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: const Color(0xFFBF0C4F),
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 4,
+                            color: const Color(0xFFBF0C4F).withOpacity(0.3),
+                            blurRadius: 8,
                           ),
                         ],
                       ),
-                      child: TextField(
-                        controller: _controller,
-                        keyboardType: TextInputType.multiline,
-                        textInputAction: TextInputAction.newline,
-                        minLines: 1,
-                        maxLines: 6, // ❗ Multiline enabled and visible
-                        textAlignVertical: TextAlignVertical.top,
-                        decoration: InputDecoration(
-                          hintText: 'Ask about a lost item...',
-                          hintStyle: TextStyle(color: Colors.grey[500]),
-                          border: InputBorder.none,
-                          isCollapsed: true,
-                        ),
-                      ),
+                      child: const Icon(Icons.send, color: Colors.white),
                     ),
                   ),
-                ),
-
-                const SizedBox(width: 12),
-
-                GestureDetector(
-                  onTap: _sendMessage,
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFBF0C4F),
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFBF0C4F).withOpacity(0.3),
-                          blurRadius: 8,
-                        ),
-                      ],
-                    ),
-                    child: const Icon(Icons.send, color: Colors.white),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
