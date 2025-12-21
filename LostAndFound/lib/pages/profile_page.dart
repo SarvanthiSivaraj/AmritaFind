@@ -1,6 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -14,12 +12,14 @@ import 'edit_profile_page.dart';
 import 'post_item_form_page.dart';
 import 'onboarding_screen.dart';
 
+// --- Theme Constants ---
 const Color kPrimary = Color(0xFFBF0C4F);
-const Color kSecondary = Color(0xFFD81B60);
-const Color kBackgroundLight = Color(0xFFF9FAFB);
-const Color kSurfaceLight = Colors.white;
-const Color kBorderLight = Color(0xFFE5E7EB);
-const Color kTextLight = Color(0xFF1F2937);
+const Color kBackground = Color(0xFFF8F9FD);
+const Color kSurface = Colors.white;
+const Color kTextPrimary = Color(0xFF1A1A1A);
+const Color kTextSecondary = Color(0xFF757575);
+const Color kFoundGreen = Color(0xFF00BFA5);
+const Color kInputFill = Color(0xFFF3F4F6);
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -40,7 +40,7 @@ class _ProfilePageState extends State<ProfilePage> {
     _loadProfile();
   }
 
-  // ---------------- LOAD PROFILE ----------------
+  // ---------------- LOGIC ----------------
   Future<void> _loadProfile() async {
     final user = FirebaseAuth.instance.currentUser;
 
@@ -79,10 +79,11 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() => _loading = false);
   }
 
-  // ---------------- UPLOAD PROFILE PICTURE ----------------
   Future<void> _changeProfilePicture() async {
-    final image =
-        await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 80);
+    final image = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
     if (image == null) return;
 
     setState(() => _isUploadingPhoto = true);
@@ -118,15 +119,337 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  // ---------------- LOGOUT ----------------
   Future<void> _logout() async {
     await FirebaseAuth.instance.signOut();
     if (!mounted) return;
     setState(() => _profile = null);
   }
 
-  // ---------------- MY POSTS ----------------
-  Widget _myPosts() {
+  // ---------------- UI BUILD ----------------
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Scaffold(
+        backgroundColor: kBackground,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_profile == null) {
+      return _buildLoginState();
+    }
+
+    return Scaffold(
+      backgroundColor: kBackground,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text(
+          "Profile",
+          style: TextStyle(color: kTextPrimary, fontWeight: FontWeight.w800),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.redAccent),
+            onPressed: _logout,
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          children: [
+            const SizedBox(height: 10),
+            _buildProfileHeader(),
+            const SizedBox(height: 24),
+            _buildInfoGrid(),
+            const SizedBox(height: 24),
+            _buildMenuSection(),
+            const SizedBox(height: 24),
+            _buildMyPostsSection(),
+            const SizedBox(height: 40),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- Login Placeholder ---
+  Widget _buildLoginState() {
+    return Scaffold(
+      backgroundColor: kBackground,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.lock_outline_rounded, size: 80, color: Colors.grey[300]),
+            const SizedBox(height: 20),
+            const Text(
+              "Login to view profile",
+              style: TextStyle(color: kTextSecondary),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kPrimary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 12,
+                ),
+              ),
+              onPressed: () async {
+                final ok = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                );
+                if (ok == true) _loadProfile();
+              },
+              child: const Text("Login", style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- Header: Avatar + Name + Edit ---
+  Widget _buildProfileHeader() {
+    return Column(
+      children: [
+        Stack(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 4),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: CircleAvatar(
+                radius: 60,
+                backgroundColor: Colors.grey[200],
+                backgroundImage: (_profile!["photoUrl"] ?? "").isEmpty
+                    ? null
+                    : NetworkImage(_profile!["photoUrl"]),
+                child: _isUploadingPhoto
+                    ? const CircularProgressIndicator(color: kPrimary)
+                    : ((_profile!["photoUrl"] ?? "").isEmpty
+                          ? Icon(
+                              Icons.person,
+                              size: 60,
+                              color: Colors.grey[400],
+                            )
+                          : null),
+              ),
+            ),
+            Positioned(
+              bottom: 4,
+              right: 4,
+              child: GestureDetector(
+                onTap: _changeProfilePicture,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    color: kPrimary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.camera_alt,
+                    size: 18,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Text(
+          (_profile!['name'] ?? 'User').toString(),
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            color: kTextPrimary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          "Roll No: $_roll",
+          style: const TextStyle(
+            fontSize: 14,
+            color: kTextSecondary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 16),
+        OutlinedButton.icon(
+          onPressed: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => EditProfilePage(profile: _profile!),
+              ),
+            );
+            _loadProfile();
+          },
+          icon: const Icon(Icons.edit_outlined, size: 16),
+          label: const Text("Edit Profile"),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: kPrimary,
+            side: const BorderSide(color: kPrimary),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // --- Info Grid: Dept, Year, Phone ---
+  Widget _buildInfoGrid() {
+    return Row(
+      children: [
+        _buildInfoCard(
+          label: "Department",
+          value: _profile!['department'] ?? 'N/A',
+          icon: Icons.school_outlined,
+        ),
+        const SizedBox(width: 12),
+        _buildInfoCard(
+          label: "Year",
+          value: _profile!['year'] ?? 'N/A',
+          icon: Icons.calendar_today_outlined,
+        ),
+        const SizedBox(width: 12),
+        _buildInfoCard(
+          label: "Phone",
+          value: _profile!['contact'] ?? '--',
+          icon: Icons.phone_outlined,
+        ),
+      ],
+    );
+  }
+
+  // --- FIXED INFO CARD WIDGET ---
+  Widget _buildInfoCard({
+    required String label,
+    required String value,
+    required IconData icon,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        decoration: BoxDecoration(
+          color: kSurface,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: kPrimary.withOpacity(0.8), size: 24),
+            const SizedBox(height: 8),
+            // Use FittedBox to scale text down if it's too long, preventing ellipsis
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: kTextPrimary,
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 11, color: kTextSecondary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- Menu: Help/Onboarding ---
+  Widget _buildMenuSection() {
+    return Container(
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: kInputFill,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(Icons.help_outline_rounded, color: kTextPrimary),
+        ),
+        title: const Text(
+          "How to use App",
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: const Text(
+          "Onboarding & Walkthrough",
+          style: TextStyle(fontSize: 12, color: kTextSecondary),
+        ),
+        trailing: const Icon(
+          Icons.arrow_forward_ios,
+          size: 16,
+          color: kTextSecondary,
+        ),
+        onTap: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => OnboardingScreen())),
+      ),
+    );
+  }
+
+  // --- My Posts Section ---
+  Widget _buildMyPostsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "My Activities",
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: kTextPrimary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildPostsStream(),
+      ],
+    );
+  }
+
+  Widget _buildPostsStream() {
     final lostStream = FirebaseFirestore.instance
         .collection("lost_items")
         .where("userId", isEqualTo: _roll)
@@ -140,20 +463,21 @@ class _ProfilePageState extends State<ProfilePage> {
     return StreamBuilder<List<QuerySnapshot>>(
       stream: StreamZip([lostStream, foundStream]),
       builder: (_, snap) {
-        if (!snap.hasData) {
-          return const Padding(
-            padding: EdgeInsets.all(24),
-            child: CircularProgressIndicator(),
-          );
-        }
+        if (!snap.hasData)
+          return const Center(child: CircularProgressIndicator());
 
         final lostDocs = snap.data![0].docs;
         final foundDocs = snap.data![1].docs;
         final allDocs = [...lostDocs, ...foundDocs];
 
-        if (allDocs.isEmpty) {
-          return _emptyPostsUI();
-        }
+        allDocs.sort((a, b) {
+          final t1 = (a.data() as Map)['timestamp'];
+          final t2 = (b.data() as Map)['timestamp'];
+          if (t1 == null || t2 == null) return 0;
+          return (t2 as Timestamp).compareTo(t1 as Timestamp);
+        });
+
+        if (allDocs.isEmpty) return _emptyPostsUI();
 
         return ListView.builder(
           shrinkWrap: true,
@@ -163,45 +487,27 @@ class _ProfilePageState extends State<ProfilePage> {
             final doc = allDocs[i];
             final data = doc.data() as Map<String, dynamic>;
             final isLost = lostDocs.contains(doc);
-
-            return Card(
-              margin: const EdgeInsets.symmetric(vertical: 6),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: ListTile(
-                title: Text(data["item_name"] ?? "Item"),
-                subtitle: Text(isLost ? "Lost Item" : "Found Item"),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit),
-                      onPressed: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => PostItemFormPage(
-                              docId: doc.id,
-                              collection: isLost ? "lost_items" : "found_items",
-                              existingData: data,
-                            ),
-                          ),
-                        );
-                      },
+            return _ModernPostCard(
+              data: data,
+              isLost: isLost,
+              onEdit: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PostItemFormPage(
+                      docId: doc.id,
+                      collection: isLost ? "lost_items" : "found_items",
+                      existingData: data,
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () async {
-                        await FirebaseFirestore.instance
-                            .collection(isLost ? "lost_items" : "found_items")
-                            .doc(doc.id)
-                            .delete();
-                      },
-                    ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
+              onDelete: () async {
+                await FirebaseFirestore.instance
+                    .collection(isLost ? "lost_items" : "found_items")
+                    .doc(doc.id)
+                    .delete();
+              },
             );
           },
         );
@@ -209,214 +515,215 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // ---------------- UI ----------------
-  @override
-  Widget build(BuildContext context) {
-    if (_loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
-    if (_profile == null) {
-      return Scaffold(
-        body: Center(
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: kPrimary),
-            onPressed: () async {
-              final ok = await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-              );
-              if (ok == true) _loadProfile();
-            },
-            child: const Text("Login"),
-          ),
-        ),
-      );
-    }
-
-    return Scaffold(
-      backgroundColor: kBackgroundLight,
-      appBar: AppBar(
-        backgroundColor: kPrimary,
-        elevation: 0,
-        title: const Text("My Profile", style: TextStyle(color: Colors.white)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit, color: Colors.white),
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => EditProfilePage(profile: _profile!),
-                ),
-              );
-              _loadProfile();
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: _logout,
+  Widget _emptyPostsUI() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 40),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.assignment_outlined, size: 40, color: Colors.grey[300]),
+          const SizedBox(height: 12),
+          Text(
+            "No posts yet",
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[600],
+            ),
           ),
         ],
       ),
+    );
+  }
+}
 
-      body: SingleChildScrollView(
-        child: Column(
+// --- Helper: Modern Post Card ---
+class _ModernPostCard extends StatelessWidget {
+  final Map<String, dynamic> data;
+  final bool isLost;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const _ModernPostCard({
+    required this.data,
+    required this.isLost,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final List imgs = data['imageUrls'] ?? [];
+    final String? firstImg = imgs.isNotEmpty ? imgs.first : null;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Curved header
-            Container(
-              height: 90,
-              decoration: const BoxDecoration(
-                color: kPrimary,
-                borderRadius: BorderRadius.vertical(
-                  bottom: Radius.circular(40),
-                ),
+            // Image Thumbnail
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: 80,
+                height: 80,
+                color: Colors.grey[100],
+                child: firstImg != null
+                    ? Image.network(firstImg, fit: BoxFit.cover)
+                    : Icon(
+                        isLost ? Icons.search_off : Icons.check_circle_outline,
+                        color: Colors.grey[400],
+                      ),
               ),
             ),
+            const SizedBox(width: 12),
 
-            // Profile card
-            Transform.translate(
-              offset: const Offset(0, -50),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      children: [
-                        Stack(
-                          children: [
-                            CircleAvatar(
-                              radius: 56,
-                              backgroundColor: Colors.grey.shade200,
-                              backgroundImage:
-                                  (_profile!["photoUrl"] ?? "").isEmpty
-                                      ? null
-                                      : NetworkImage(_profile!["photoUrl"]),
-                              child: (_profile!["photoUrl"] ?? "").isEmpty
-                                  ? const Icon(Icons.person,
-                                      size: 56, color: Colors.grey)
-                                  : null,
+            // Content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Status Chip
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isLost
+                              ? kPrimary.withOpacity(0.1)
+                              : kFoundGreen.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          isLost ? "LOST" : "FOUND",
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: isLost ? kPrimary : kFoundGreen,
+                          ),
+                        ),
+                      ),
+
+                      // Edit/Delete Menu
+                      SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: PopupMenuButton<String>(
+                          padding: EdgeInsets.zero,
+                          icon: const Icon(
+                            Icons.more_horiz,
+                            size: 20,
+                            color: kTextSecondary,
+                          ),
+                          onSelected: (val) {
+                            if (val == 'edit') onEdit();
+                            if (val == 'delete') _confirmDelete(context);
+                          },
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                              value: 'edit',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.edit, size: 18),
+                                  SizedBox(width: 8),
+                                  Text("Edit"),
+                                ],
+                              ),
                             ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: GestureDetector(
-                                onTap: _changeProfilePicture,
-                                child: const CircleAvatar(
-                                  radius: 18,
-                                  backgroundColor: kPrimary,
-                                  child: Icon(Icons.camera_alt,
-                                      size: 18, color: Colors.white),
-                                ),
+                            const PopupMenuItem(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
+                                    size: 18,
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    "Delete",
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
-
-                        const SizedBox(height: 12),
-                        Text(
-                          (_profile!['name'] ?? 'User').toString(),
-                          style: const TextStyle(
-                              fontSize: 20, fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          (_profile!['department'] ?? '').toString(),
-                          style: const TextStyle(color: Colors.grey),
-                        ),
-
-                        const SizedBox(height: 16),
-                        _infoRow("Department", (_profile!['department'] ?? '').toString()),
-                        _infoRow("Year", (_profile!['year'] ?? '').toString()),
-                        _infoRow("Roll Number", _roll),
-                        _infoRow("Phone", (_profile!['contact'] ?? '').toString()),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 10),
-                  Row(
-                    children: const [
-                      Icon(Icons.history, color: kPrimary),
-                      SizedBox(width: 6),
-                      Text(
-                        "My Posts",
-                        style:
-                            TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  _myPosts(),
+                  const SizedBox(height: 6),
 
-                  const SizedBox(height: 12),
-                  Card(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    child: ListTile(
-                      leading: const Icon(Icons.help_outline, color: kPrimary),
-                      title: const Text('How to use the app'),
-                      subtitle: const Text('Onboarding and walkthrough'),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => OnboardingScreen()),
-                      ),
+                  // Item Name
+                  Text(
+                    data["item_name"] ?? "Unknown Item",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: kTextPrimary,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
+                  const SizedBox(height: 4),
 
-                  const SizedBox(height: 100),
+                  // Description
+                  Text(
+                    data["description"] ?? "No description",
+                    style: const TextStyle(fontSize: 12, color: kTextSecondary),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ],
               ),
             ),
           ],
         ),
       ),
-
     );
   }
 
-  Widget _infoRow(String label, String value) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(label, style: const TextStyle(color: Colors.grey)),
-            Text(value,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
-          ],
-        ),
-      );
-
-  Widget _emptyPostsUI() => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 40),
-        decoration: BoxDecoration(
-          color: kSurfaceLight,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: kBorderLight),
-        ),
-        child: Column(
-          children: const [
-            Icon(Icons.post_add, size: 40, color: kPrimary),
-            SizedBox(height: 10),
-            Text("No posts yet",
-                style: TextStyle(fontWeight: FontWeight.w600)),
-            SizedBox(height: 4),
-            Text(
-              "Items you report as lost or found will appear here.",
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      );
+  void _confirmDelete(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Delete Post"),
+        content: const Text("Are you sure you want to remove this post?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              onDelete();
+            },
+            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
 }
