@@ -158,45 +158,72 @@ class _HomePageFeedState extends State<HomePageFeed> {
       appBar: AppBar(
         backgroundColor: kBackgroundLight,
         elevation: 0,
+        toolbarHeight: 72,
+        automaticallyImplyLeading: false,
+        titleSpacing: 16,
         title: Row(
           children: [
+            // Logo
             Container(
-              width: 40,
-              height: 40,
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white,
-                border: Border.all(color: kPrimary.withOpacity(0.12)),
-                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
+                gradient: LinearGradient(
+                  colors: [
+                    kPrimary.withOpacity(0.9),
+                    kPrimary.withOpacity(0.7),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: kPrimary.withOpacity(0.25),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: ClipOval(
                 child: Image.network(
-                        'https://img.jagranjosh.com/images/2024/May/852024/Logo2.wsmf.png',
+                  'https://img.jagranjosh.com/images/2024/May/852024/Logo2.wsmf.png',
                   fit: BoxFit.cover,
-                  width: 40,
-                  height: 40,
-                  errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.person, color: kPrimary, size: 18)),
+                  errorBuilder: (_, __, ___) =>
+                      const Icon(Icons.school, color: Colors.white, size: 20),
                 ),
               ),
             ),
 
-            const SizedBox(width: 8),
-            const Expanded(
-              child: Text(
-                "AmritaFind",
-                style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 25,
+            const SizedBox(width: 12),
+
+            // App Name + Tagline
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  "AmritaFind",
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black,
+                    letterSpacing: 0.2,
+                  ),
                 ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
+                Text(
+                  "Lost & Found Campus Hub",
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
+
         actions: [_buildNotificationButton(context)],
-        
       ),
 
       /// ADD BUTTON
@@ -302,7 +329,10 @@ class _HomePageFeedState extends State<HomePageFeed> {
           alignment: Alignment.center,
           children: [
             IconButton(
-              icon: const Icon(Icons.notifications_outlined, color: Colors.black),
+              icon: const Icon(
+                Icons.notifications_outlined,
+                color: Colors.black,
+              ),
               onPressed: () {
                 Navigator.push(
                   context,
@@ -316,9 +346,19 @@ class _HomePageFeedState extends State<HomePageFeed> {
                 right: 8,
                 child: Container(
                   padding: const EdgeInsets.all(2),
-                  decoration: const BoxDecoration(color: kPrimary, shape: BoxShape.circle),
-                  constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                  child: Text('$unreadCount', style: const TextStyle(color: Colors.white, fontSize: 10), textAlign: TextAlign.center),
+                  decoration: const BoxDecoration(
+                    color: kPrimary,
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
+                  child: Text(
+                    '$unreadCount',
+                    style: const TextStyle(color: Colors.white, fontSize: 10),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
           ],
