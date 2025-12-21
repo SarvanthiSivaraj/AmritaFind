@@ -44,7 +44,6 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
   final _itemNameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _contactController = TextEditingController();
-  final _secretQuestionController = TextEditingController();
 
   final ImagePicker _picker = ImagePicker();
   List<XFile> _selectedImages = [];
@@ -63,7 +62,6 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
       _itemNameController.text = data["item_name"] ?? "";
       _descriptionController.text = data["description"] ?? "";
       _contactController.text = data["contact"] ?? "";
-      _secretQuestionController.text = data["secret_question"] ?? "";
       _uploadedUrls = List<String>.from(data["imageUrls"] ?? []);
     }
   }
@@ -136,7 +134,6 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
       "description": _descriptionController.text.trim(),
       "location": _location ?? "",
       "contact": _contactController.text.trim(),
-      "secret_question": _secretQuestionController.text.trim(),
       "status": _status,
       "imageUrls": _uploadedUrls,
     };
@@ -303,17 +300,7 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
                         keyboardType: TextInputType.phone,
                       ),
 
-                      const SizedBox(height: 16),
-
-                      _ModernTextField(
-                        controller: _secretQuestionController,
-                        label: "Secret Question",
-                        hint: "e.g., What is the wallpaper?",
-                        icon: Icons.lock_outline_rounded,
-                        helperText: "Used to verify ownership securely.",
-                      ),
-
-                      const SizedBox(height: 40), // Bottom padding
+                      const SizedBox(height: 24), // Bottom padding
                     ],
                   ),
                 ),
