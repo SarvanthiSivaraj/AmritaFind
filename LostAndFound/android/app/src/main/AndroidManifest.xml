@@ -2,7 +2,7 @@
     <!-- Required for internet access -->
     <uses-permission android:name="android.permission.INTERNET" />
     <application
-        android:label="lostandfound"
+        android:label="AmritaFind"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         <activity
