@@ -148,28 +148,6 @@ class NotificationsPage extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    // Image Placeholder
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(16),
-                        image: itemData['imageUrl'] != null
-                            ? DecorationImage(
-                                image: NetworkImage(itemData['imageUrl']),
-                                fit: BoxFit.cover,
-                              )
-                            : null,
-                      ),
-                      child: itemData['imageUrl'] == null
-                          ? const Icon(
-                              Icons.image_not_supported,
-                              color: Colors.grey,
-                            )
-                          : null,
-                    ),
-                    const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

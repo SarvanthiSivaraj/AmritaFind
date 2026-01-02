@@ -138,6 +138,14 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
       "imageUrls": _uploadedUrls,
     };
 
+    // Strictly sanitize data for AI (Allow-list approach) to ensure no images/timestamps pass through
+    final aiData = {
+      "item_name": data["item_name"],
+      "description": data["description"],
+      "location": data["location"],
+      "status": data["status"],
+    };
+
     if (isEdit) {
       await FirebaseFirestore.instance
           .collection(widget.collection!)
@@ -155,7 +163,9 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
           });
 
       if (_status == 'Lost') {
-        _runAiMatching(data, newDocRef.id, user.uid);
+        await _runAiMatching(aiData, newDocRef.id, user.uid);
+      } else {
+        await _runFoundItemMatching(aiData, newDocRef.id);
       }
     }
   }
@@ -178,15 +188,67 @@ class _PostItemFormPageState extends State<PostItemFormPage> {
 
     for (final foundDoc in foundItems) {
       final foundItemData = foundDoc.data();
-      final isMatch = await aiService.isMatch(lostItemData, foundItemData);
 
-      if (isMatch) {
-        await _createMatchNotification(
-          userId: userId,
-          lostItemName: lostItemData['item_name'],
-          lostItemId: lostItemId,
-          foundItemId: foundDoc.id,
-        );
+      // Strictly sanitize comparison data
+      final cleanFoundData = {
+        "item_name": foundItemData["item_name"] ?? "",
+        "description": foundItemData["description"] ?? "",
+        "location": foundItemData["location"] ?? "",
+      };
+
+      try {
+        final isMatch = await aiService.isMatch(lostItemData, cleanFoundData);
+        if (isMatch) {
+          await _createMatchNotification(
+            userId: userId,
+            lostItemName: lostItemData['item_name'],
+            lostItemId: lostItemId,
+            foundItemId: foundDoc.id,
+          );
+        }
+      } catch (e) {
+        debugPrint("Error in AI matching (Lost): $e");
+      }
+    }
+  }
+
+  Future<void> _runFoundItemMatching(
+    Map<String, dynamic> foundItemData,
+    String foundItemId,
+  ) async {
+    final apiKey = dotenv.env['GEMINI_API_KEY'];
+    if (apiKey == null) return;
+    final aiService = AiService(apiKey: apiKey);
+
+    final lostItemsSnapshot = await FirebaseFirestore.instance
+        .collection("lost_items")
+        .get();
+    final lostItems = lostItemsSnapshot.docs;
+
+    if (lostItems.isEmpty) return;
+
+    for (final lostDoc in lostItems) {
+      final lostItemData = lostDoc.data();
+
+      // Strictly sanitize comparison data
+      final cleanLostData = {
+        "item_name": lostItemData["item_name"] ?? "",
+        "description": lostItemData["description"] ?? "",
+        "location": lostItemData["location"] ?? "",
+      };
+
+      try {
+        final isMatch = await aiService.isMatch(cleanLostData, foundItemData);
+        if (isMatch && lostItemData['uid'] != null) {
+          await _createMatchNotification(
+            userId: lostItemData['uid'],
+            lostItemName: lostItemData['item_name'] ?? 'Unknown Item',
+            lostItemId: lostDoc.id,
+            foundItemId: foundItemId,
+          );
+        }
+      } catch (e) {
+        debugPrint("Error in AI matching (Found): $e");
       }
     }
   }
@@ -654,6 +716,7 @@ class _ModernTextField extends StatelessWidget {
     required this.icon,
     this.maxLines = 1,
     this.keyboardType = TextInputType.text,
+    this.helperText,
   });
 
   @override
