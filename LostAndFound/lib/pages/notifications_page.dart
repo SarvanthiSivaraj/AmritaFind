@@ -15,9 +15,14 @@ class AppColors {
   static const Color textLight = Color(0xFF9CA3AF);
 }
 
-class NotificationsPage extends StatelessWidget {
+class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
 
+  @override
+  State<NotificationsPage> createState() => _NotificationsPageState();
+}
+
+class _NotificationsPageState extends State<NotificationsPage> {
   // --- Logic: Handle Tap ---
   Future<void> _onNotificationTapped(
     BuildContext context,
@@ -305,6 +310,10 @@ class NotificationsPage extends StatelessWidget {
           ),
         ),
         actions: [
+          IconButton(
+            onPressed: () => setState(() {}),
+            icon: const Icon(Icons.refresh, color: AppColors.textBody),
+          ),
           IconButton(
             onPressed: () {
               // Logic to clear all can go here

@@ -247,7 +247,15 @@ class _HomePageFeedState extends State<HomePageFeed> {
           ],
         ),
 
-        actions: [_buildNotificationButton(context)],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.black),
+            onPressed: () {
+              setState(() {});
+            },
+          ),
+          _buildNotificationButton(context),
+        ],
       ),
 
       body: Column(
